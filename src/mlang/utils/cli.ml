@@ -54,14 +54,13 @@ let display_time =
     & info [ "display_time"; "t" ]
         ~doc:"Displays timing information (use with --debug)")
 
-let dep_graph_file =
+let dbg_graph_file =
   let doc =
-    "Name of the file where the variable dependency graph should be output \
-     (use with --debug)"
+    "Name of the file where the debug graph should be output (use with --debug)"
   in
   Arg.(
-    value & opt file "dep_graph.dot"
-    & info [ "dep_graph_file"; "g" ] ~docv:"DEP_GRAPH" ~doc)
+    value & opt file "dbg_graph"
+    & info [ "dbg_graph_file"; "g" ] ~docv:"DEBUG_GRAPH" ~doc)
 
 let no_print_cycles =
   let doc = "If set, disable the eventual circular dependencies repport" in
@@ -142,6 +141,25 @@ let roundops =
            running on a mainframe. In this case, the size of the long type has \
            to be specified; it can be either 32 or 64.")
 
+let dbgraph_var_focus =
+  Arg.(
+    value
+    & opt (some string) None
+    & info [ "dbgraph_var_focus" ] ~docv:"DBGRAPH_VAR_FOCUCS"
+      ~doc:
+        {|To be used in conjunction with the --debug option. This 
+        makes the graph output only information concerning the variable passed.|}
+  )
+
+let dbgraph_depth =
+  Arg.(
+    value
+    & opt (int) 3
+    & info [ "dbgraph_depth" ] ~docv:"DBGRAPH_DEPTH"
+    ~doc:
+      {|To be used in conjunction with the --debgraph-var-focus option.
+      This options sets the max depth at which the dependency graph is explored.|})
+
 let comparison_error_margin_cli =
   Arg.(
     value
@@ -185,10 +203,11 @@ let dgfip_options =
 let mlang_t f =
   Term.(
     const f $ files $ applications $ without_dgfip_m $ debug $ var_info_debug
-    $ display_time $ dep_graph_file $ no_print_cycles $ backend $ output
+    $ display_time $ dbg_graph_file $ no_print_cycles $ backend $ output
     $ run_all_tests $ dgfip_test_filter $ run_test $ mpp_function
     $ optimize_unsafe_float $ precision $ roundops $ comparison_error_margin_cli
-    $ income_year_cli $ m_clean_calls $ dgfip_options)
+    $ income_year_cli $ m_clean_calls $ dgfip_options
+    $ dbgraph_depth $ dbgraph_var_focus)
 
 let info =
   let doc =
@@ -242,13 +261,25 @@ type value_sort =
 type round_ops = RODefault | ROMulti | ROMainframe of int
 (* size of type long, either 32 or 64 *)
 
-let source_files : string list ref = ref []
+type backend = Dgfip_c | UnknownBackend
+
+type execution_mode =
+  | SingleTest of string
+  | MultipleTests of string
+  | Extraction
+
+type files = NonEmpty of string list
+
+let get_files = function NonEmpty l -> l
+
+(* This feels weird to put here, but by construction it should not happen.*)
+let source_files : files ref = ref (NonEmpty [])
 
 let application_names : string list ref = ref []
 
 let without_dgfip_m = ref false
 
-let dep_graph_file : string ref = ref "dep_graph.dot"
+let dbg_graph_file : string ref = ref "dbg_graph.dot"
 
 let verify_flag = ref false
 
@@ -274,19 +305,37 @@ let value_sort = ref RegularFloat
 
 let round_ops = ref RODefault
 
+let backend = ref UnknownBackend
+
+let dgfip_test_filter = ref false
+
+let mpp_function = ref ""
+
+let dgfip_flags = ref Dgfip_options.default_flags
+
+let execution_mode = ref Extraction
+
 (* Default value for the epsilon slack when comparing things in the
    interpreter *)
 let comparison_error_margin = ref 0.000001
 
 let income_year = ref 0
 
-let set_all_arg_refs (files_ : string list) applications_
-    (without_dgfip_m_ : bool) (debug_ : bool) (var_info_debug_ : string list)
-    (display_time_ : bool) (dep_graph_file_ : string) (no_print_cycles_ : bool)
+let dbgraph_var_focus = ref None
+
+let dbgraph_depth = ref 3
+
+let set_all_arg_refs (files_ : files) applications_ (without_dgfip_m_ : bool)
+    (debug_ : bool) (var_info_debug_ : string list) (display_time_ : bool)
+    (dbg_graph_file_ : string) (no_print_cycles_ : bool)
     (output_file_ : string option) (optimize_unsafe_float_ : bool)
     (m_clean_calls_ : bool) (comparison_error_margin_ : float option)
     (income_year_ : int option) (value_sort_ : value_sort)
-    (round_ops_ : round_ops) =
+    (round_ops_ : round_ops) (backend_ : backend) (dgfip_test_filter_ : bool)
+    (mpp_function_ : string) (dgfip_flags_ : Dgfip_options.flags)
+    (execution_mode_ : execution_mode)
+    (dbgraph_depth_ : int)
+    (dbgraph_var_focus_ : string option) =
   source_files := files_;
   application_names := applications_;
   without_dgfip_m := without_dgfip_m_;
@@ -294,16 +343,23 @@ let set_all_arg_refs (files_ : string list) applications_
   var_info_debug := var_info_debug_;
   var_info_flag := !var_info_debug <> [];
   display_time := display_time_;
-  dep_graph_file := dep_graph_file_;
+  dbg_graph_file := dbg_graph_file_;
   no_print_cycles_flag := no_print_cycles_;
   optimize_unsafe_float := optimize_unsafe_float_;
   m_clean_calls := m_clean_calls_;
+  execution_mode := execution_mode_;
   (income_year :=
      match income_year_ with
      | Some y -> y
      | None -> 1900 + (Unix.localtime (Unix.time ())).Unix.tm_year - 1);
   value_sort := value_sort_;
   round_ops := round_ops_;
+  backend := backend_;
+  dgfip_test_filter := dgfip_test_filter_;
+  mpp_function := mpp_function_;
+  dgfip_flags := dgfip_flags_;
+  dbgraph_var_focus := dbgraph_var_focus_;
+  dbgraph_depth := dbgraph_depth_;
   match output_file_ with
   | None -> ()
   | Some o -> (

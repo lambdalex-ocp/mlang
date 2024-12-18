@@ -40,6 +40,8 @@ val mlang_t :
   int option ->
   bool ->
   string list option ->
+  int ->
+  string option ->
   'a) ->
   'a Cmdliner.Term.t
 (** Mlang binary command-line arguments parsing function *)
@@ -70,13 +72,26 @@ type round_ops =
   | ROMulti
   | ROMainframe of int  (** size of type long, either 32 or 64 *)
 
-val source_files : string list ref
+type backend = Dgfip_c | UnknownBackend
+
+type execution_mode =
+  | SingleTest of string
+  | MultipleTests of string
+  | Extraction
+
+type files = NonEmpty of string list
+
+val get_files : files -> string list
+
+val source_files : files ref
 (** M source files to be compiled *)
 
 val application_names : string list ref
 
-val dep_graph_file : string ref
-(** Prefix for dependency graph output files *)
+val dbg_graph_file : string ref
+(** Prefix for debug graph output files *)
+
+val without_dgfip_m : bool ref
 
 val verify_flag : bool ref
 (** Use Z3 to check if verif rules hold all the time *)
@@ -88,7 +103,8 @@ val var_info_flag : bool ref
 (** Print infomation about variables declared, defined ou used incorrectly *)
 
 val var_info_debug : string list ref
-(** Prints even more information but only about some variables members of a list *)
+(** Prints even more information but only about some variables members of a list
+*)
 
 val warning_flag : bool ref
 (** Print warning info *)
@@ -116,14 +132,28 @@ val value_sort : value_sort ref
 
 val round_ops : round_ops ref
 
+val backend : backend ref
+
+val dgfip_test_filter : bool ref
+
+val mpp_function : string ref
+
+val dgfip_flags : Dgfip_options.flags ref
+
+val execution_mode : execution_mode ref
+
+val dbgraph_var_focus: string option ref
+
+val dbgraph_depth: int ref
+
 val set_all_arg_refs :
-  (* files *) string list ->
+  (* files *) files ->
   (* applications *) string list ->
   (* without_dgfip_m *) bool ->
   (* debug *) bool ->
   (* var_info_debug *) string list ->
   (* display_time *) bool ->
-  (* dep_graph_file *) string ->
+  (* dbg_graph_file *) string ->
   (* prints_cycles *) bool ->
   (* output_file *) string option ->
   (* optimize_unsafe_float *) bool ->
@@ -132,6 +162,13 @@ val set_all_arg_refs :
   (* income_year *) int option ->
   value_sort ->
   round_ops ->
+  backend ->
+  (* dgfip_test_filter *) bool ->
+  (* mpp_function *) string ->
+  (* dgfip_flags *) Dgfip_options.flags ->
+  (* execution_mode *) execution_mode ->
+  (* dbgraph_depth *) int ->
+  (* dbgraph_var_focus *) string option ->
   unit
 
 val add_prefix_to_each_line : string -> (int -> string) -> string

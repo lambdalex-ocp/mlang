@@ -52,7 +52,8 @@ let to_MIR_function_and_inputs (program : Mir.program) (t : Irj_ast.irj_file) :
 exception InterpError of int
 
 let check_test (program : Mir.program) (test_name : string)
-    (value_sort : Cli.value_sort) (round_ops : Cli.round_ops) : unit =
+    (dep_graph_file : string option) (value_sort : Cli.value_sort)
+    (round_ops : Cli.round_ops) : unit =
   Cli.debug_print "Parsing %s..." test_name;
   let t = Irj_file.parse_file test_name in
   Cli.debug_print "Running test %s..." t.nom;
@@ -60,9 +61,16 @@ let check_test (program : Mir.program) (test_name : string)
   Cli.debug_print "Executing program";
   (* Cli.debug_print "Combined Program (w/o verif conds):@.%a@."
      Format_bir.format_program program; *)
-  let varMap, anoSet =
+  let varMap, anoSet, dbg_info =
     Mir_interpreter.evaluate_program program input_file value_sort round_ops
+      (Option.is_some dep_graph_file)
   in
+  (match (dep_graph_file, dbg_info) with
+  | None, None -> ()
+  | Some dep_graph_file, Some (dbg, ctxd) ->
+      Mir_debug_graph.output_json_eval_program dbg ctxd dep_graph_file ()
+  | _ -> assert false);
+  (* should not happen, invariant is that dbg_info is None iff we're not outputting any dep_graph *)
   let check_vars exp vars =
     let test_error_margin = 0.01 in
     let fold e f nb =
@@ -121,7 +129,7 @@ let check_all_tests (p : Mir.program) (test_dir : string)
     in
     try
       Cli.debug_flag := false;
-      check_test p (test_dir ^ name) value_sort round_ops;
+      check_test p (test_dir ^ name) None value_sort round_ops;
       Cli.debug_flag := true;
       Cli.result_print "%s" name;
       failures

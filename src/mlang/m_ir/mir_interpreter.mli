@@ -23,6 +23,8 @@
 (** The BIR interpreter can be instrumented to record which program locations
     have been executed. *)
 
+module G = Dbggraph_types
+
 val exit_on_rte : bool ref
 (** If set to true, the interpreter exits the whole process in case of runtime
     error *)
@@ -79,6 +81,9 @@ module type S = sig
 
   val update_ctx_with_inputs : ctx -> Com.literal Com.Var.Map.t -> unit
 
+  val update_ctxd_with_inputs :
+    G.ctx_dbg -> Com.literal Com.Var.Map.t -> G.ctx_dbg * G.t
+
   (** Interpreter runtime errors *)
   type run_error =
     | NanOrInf of string * Mir.expression Pos.marked
@@ -94,9 +99,15 @@ module type S = sig
   (** Returns the comparison between two numbers in the rounding and precision
       context of the interpreter. *)
 
-  val evaluate_expr : ctx -> Mir.program -> Mir.expression Pos.marked -> value
+  val evaluate_expr :
+    ?dbg_info:(G.t * G.ctx_dbg) option ref ->
+    ctx ->
+    Mir.program ->
+    Mir.expression Pos.marked ->
+    value
 
-  val evaluate_program : Mir.program -> ctx -> unit
+  val evaluate_program :
+    ?dbg_info:(G.t * G.ctx_dbg) option ref -> Mir.program -> ctx -> unit
 end
 
 module FloatDefInterp :
@@ -158,7 +169,8 @@ val evaluate_program :
   Com.literal Com.Var.Map.t ->
   Cli.value_sort ->
   Cli.round_ops ->
-  Com.literal StrMap.t * StrSet.t
+  bool (* dbg_flag *) ->
+  Com.literal StrMap.t * StrSet.t * (G.t * G.ctx_dbg) option
 (** Main interpreter function *)
 
 val evaluate_expr :
