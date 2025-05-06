@@ -86,7 +86,7 @@ val source_files : files ref
 
 val application_names : string list ref
 
-val dep_graph_file : string ref
+val dbg_graph_file : string ref
 (** Prefix for debug graph output files *)
 val without_dgfip_m : bool ref
 

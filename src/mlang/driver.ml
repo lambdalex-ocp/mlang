@@ -147,7 +147,7 @@ let parse () =
 
 let set_opts (files : string list) (application_names : string list)
     (without_dgfip_m : bool) (debug : bool) (var_info_debug : string list)
-    (display_time : bool) (dep_graph_file : string) (print_cycles : bool)
+    (display_time : bool) (dbg_graph_file : string) (print_cycles : bool)
     (backend : string option) (output : string option)
     (run_tests : string option) (dgfip_test_filter : bool)
     (run_test : string option) (mpp_function : string)
@@ -217,7 +217,7 @@ let set_opts (files : string list) (application_names : string list)
     process_dgfip_options !Cli.backend ~application_names dgfip_options
   in
   Cli.set_all_arg_refs files application_names without_dgfip_m debug
-    var_info_debug display_time dep_graph_file print_cycles output
+    var_info_debug display_time dbg_graph_file print_cycles output
     optimize_unsafe_float m_clean_calls comparison_error_margin income_year
     value_sort round_ops backend dgfip_test_filter mpp_function dgfip_flags
     execution_mode
