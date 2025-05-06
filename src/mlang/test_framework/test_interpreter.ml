@@ -135,9 +135,10 @@ let to_MIR_function_and_inputs (program : Mir.program) (t : Irj_ast.irj_file) :
 
 exception InterpError of int
 
-let check_test (program : Mir.program) (test_name : string)
+let check_test ?(files : string list option) (program : Mir.program)
+    (test_name : string) (dep_graph_file : string option)
     (value_sort : Cli.value_sort) (round_ops : Cli.round_ops) : unit =
-  let check_vars exp vars =
+    let check_vars exp vars =
     let test_error_margin = 0.01 in
     let fold vname f nb =
       let f' =
@@ -185,6 +186,17 @@ let check_test (program : Mir.program) (test_name : string)
         Cli.debug_print "Executing program %s" inst.label;
         (* Cli.debug_print "Combined Program (w/o verif conds):@.%a@."
            Format_bir.format_program program; *)
+        (match dep_graph_file with
+          | None -> ()
+          | Some _dep_graph_file ->
+        let _files =
+          match files with Some files -> files | None -> assert false
+        in
+        ());
+        (* This is where we'll do the work - this exists solely because of a weird rebase *)
+        (* Dbg_graph.output_dot_eval_program files program input_file *)
+        (*   value_sort round_ops dep_graph_file ()); *)
+
         let varMap, anoSet =
           Mir_interpreter.evaluate_program program inst.vars inst.events
             value_sort round_ops
@@ -232,7 +244,7 @@ let check_all_tests (p : Mir.program) (test_dir : string)
     in
     try
       Cli.debug_flag := false;
-      check_test p (test_dir ^ name) value_sort round_ops;
+      check_test p (test_dir ^ name) None value_sort round_ops;
       Cli.debug_flag := true;
       Cli.result_print "%s" name;
       (name :: successes, failures)
@@ -293,7 +305,7 @@ let check_one_test (p : Mir.program) (name : string)
     in
     try
       Cli.debug_flag := false;
-      check_test p name value_sort round_ops;
+      check_test p name None value_sort round_ops;
       Cli.debug_flag := true;
       Cli.result_print "%s" name;
       None

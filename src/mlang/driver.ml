@@ -225,7 +225,7 @@ let set_opts (files : string list) (application_names : string list)
 let run_single_test m_program test =
   Mir_interpreter.repl_debug := true;
   ignore
-    (Test_interpreter.check_one_test m_program test 
+    (Test_interpreter.check_test m_program test 
     (if !Cli.debug_flag then Some !Cli.dbg_graph_file else None)
     !Cli.value_sort !Cli.round_ops);
   Cli.result_print "Test passed!"
