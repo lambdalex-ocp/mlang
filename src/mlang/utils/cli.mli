@@ -141,7 +141,7 @@ val dgfip_flags : Dgfip_options.flags ref
 
 val execution_mode : execution_mode ref
 
-val dbgraph_var_focus: string option ref
+val dbgraph_var_focus : string option ref
 
 val set_all_arg_refs :
   (* files *) files ->

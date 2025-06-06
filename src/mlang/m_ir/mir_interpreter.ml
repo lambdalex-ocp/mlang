@@ -1316,7 +1316,7 @@ let prepare_interp (sort : Cli.value_sort) (roundops : Cli.round_ops) : unit =
 
 let evaluate_program (p : Mir.program) (inputs : Com.literal Com.Var.Map.t)
     (events : (Com.literal, Com.Var.t) Com.event_value StrMap.t list)
-    (sort : Cli.value_sort) (roundops : Cli.round_ops) :
+    (sort : Cli.value_sort) (roundops : Cli.round_ops) (dbg_flag : bool) :
     Com.literal Com.Var.Map.t * Com.Error.Set.t =
   prepare_interp sort roundops;
   let module Interp = (val get_interp sort roundops : S) in

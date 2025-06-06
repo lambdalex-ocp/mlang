@@ -138,7 +138,7 @@ exception InterpError of int
 let check_test ?(files : string list option) (program : Mir.program)
     (test_name : string) (dep_graph_file : string option)
     (value_sort : Cli.value_sort) (round_ops : Cli.round_ops) : unit =
-    let check_vars exp vars =
+  let check_vars exp vars =
     let test_error_margin = 0.01 in
     let fold vname f nb =
       let f' =
@@ -186,21 +186,22 @@ let check_test ?(files : string list option) (program : Mir.program)
         Cli.debug_print "Executing program %s" inst.label;
         (* Cli.debug_print "Combined Program (w/o verif conds):@.%a@."
            Format_bir.format_program program; *)
-        (match dep_graph_file with
-          | None -> ()
-          | Some _dep_graph_file ->
-        let _files =
-          match files with Some files -> files | None -> assert false
-        in
-        ());
         (* This is where we'll do the work - this exists solely because of a weird rebase *)
-        (* Dbg_graph.output_dot_eval_program files program input_file *)
-        (*   value_sort round_ops dep_graph_file ()); *)
-
         let varMap, anoSet =
           Mir_interpreter.evaluate_program program inst.vars inst.events
             value_sort round_ops
         in
+        (match dep_graph_file, dbg_info with
+        | None, None-> ()
+        | Some _dep_graph_file, Some dbg_info ->
+            Dbg_graph.output_dot_eval_program files program inst.vars value_sort
+              round_ops dep_graph_file ();
+            let _files =
+              match files with Some files -> files | None -> assert false
+            in
+            ()
+        | _ -> assert false);
+
         let nbErrs =
           check_vars inst.expectedVars varMap
           + check_anos inst.expectedAnos anoSet
@@ -239,8 +240,8 @@ let check_all_tests (p : Mir.program) (test_dir : string)
   (* let _, finish = Cli.create_progress_bar "Testing files" in*)
   let process (name : string) ((successes, failures) : process_acc) :
       process_acc =
-    let module Interp =
-      (val Mir_interpreter.get_interp value_sort round_ops : Mir_interpreter.S)
+    let module Interp = (val Mir_interpreter.get_interp value_sort round_ops
+                           : Mir_interpreter.S)
     in
     try
       Cli.debug_flag := false;
@@ -300,8 +301,8 @@ let check_one_test (p : Mir.program) (name : string)
   Cli.display_time := false;
   (* let _, finish = Cli.create_progress_bar "Testing files" in*)
   let is_ok =
-    let module Interp =
-      (val Mir_interpreter.get_interp value_sort round_ops : Mir_interpreter.S)
+    let module Interp = (val Mir_interpreter.get_interp value_sort round_ops
+                           : Mir_interpreter.S)
     in
     try
       Cli.debug_flag := false;

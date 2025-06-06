@@ -146,10 +146,9 @@ let dbgraph_var_focus =
     value
     & opt (some string) None
     & info [ "dbgraph_var_focus" ] ~docv:"DBGRAPH_VAR_FOCUCS"
-      ~doc:
-        {|To be used in conjunction with the --debug option. This 
-        makes the graph output only information concerning the variable passed.|}
-  )
+        ~doc:
+          {|To be used in conjunction with the --debug option. This 
+        makes the graph output only information concerning the variable passed.|})
 
 let comparison_error_margin_cli =
   Arg.(
@@ -321,8 +320,7 @@ let set_all_arg_refs (files_ : files) applications_ (without_dgfip_m_ : bool)
     (income_year_ : int option) (value_sort_ : value_sort)
     (round_ops_ : round_ops) (backend_ : backend) (dgfip_test_filter_ : bool)
     (mpp_function_ : string) (dgfip_flags_ : Dgfip_options.flags)
-    (execution_mode_ : execution_mode)
-    (dbgraph_var_focus_ : string option) =
+    (execution_mode_ : execution_mode) (dbgraph_var_focus_ : string option) =
   source_files := files_;
   application_names := applications_;
   without_dgfip_m := without_dgfip_m_;

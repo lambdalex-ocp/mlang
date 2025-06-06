@@ -40,7 +40,6 @@ let process_dgfip_options (backend : Cli.backend)
     end
   | UnknownBackend -> Dgfip_options.default_flags
 
-
 (* The legacy compiler plays a nasty trick on us, that we have to reproduce:
    rule 1 is modified to add assignments to APPLI_XXX variables according to the
    target application (OCEANS, BATCH and ILIAD). *)
@@ -140,8 +139,6 @@ let parse () =
   finish "completed!";
   m_program
 
-
-
 (** Entry function for the executable. Returns a negative number in case of
     error. *)
 
@@ -154,9 +151,7 @@ let set_opts (files : string list) (application_names : string list)
     (optimize_unsafe_float : bool) (precision : string option)
     (roundops : string option) (comparison_error_margin : float option)
     (income_year : int option) (m_clean_calls : bool)
-    (dgfip_options : string list option)
-    (dbgraph_var_focus : string option)
-    =
+    (dgfip_options : string list option) (dbgraph_var_focus : string option) =
   let value_sort =
     let precision = Option.get precision in
     if precision = "double" then Cli.RegularFloat
@@ -227,9 +222,9 @@ let set_opts (files : string list) (application_names : string list)
 let run_single_test m_program test =
   Mir_interpreter.repl_debug := true;
   ignore
-    (Test_interpreter.check_test m_program test 
-    (if !Cli.debug_flag then Some !Cli.dbg_graph_file else None)
-    !Cli.value_sort !Cli.round_ops);
+    (Test_interpreter.check_test m_program test
+       (if !Cli.debug_flag then Some !Cli.dbg_graph_file else None)
+       !Cli.value_sort !Cli.round_ops);
   Cli.result_print "Test passed!"
 
 let run_multiple_tests m_program tests =
