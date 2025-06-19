@@ -40,6 +40,7 @@ val mlang_t :
   int option ->
   bool ->
   string list option ->
+  string option ->
   'a) ->
   'a Cmdliner.Term.t
 (** Mlang binary command-line arguments parsing function *)
@@ -88,6 +89,7 @@ val application_names : string list ref
 
 val dbg_graph_file : string ref
 (** Prefix for debug graph output files *)
+
 val without_dgfip_m : bool ref
 
 val verify_flag : bool ref
@@ -139,6 +141,8 @@ val dgfip_flags : Dgfip_options.flags ref
 
 val execution_mode : execution_mode ref
 
+val dbgraph_var_focus: string option ref
+
 val set_all_arg_refs :
   (* files *) files ->
   (* applications *) string list ->
@@ -160,6 +164,7 @@ val set_all_arg_refs :
   (* mpp_function *) string ->
   (* dgfip_flags *) Dgfip_options.flags ->
   (* execution_mode *) execution_mode ->
+  (* dbgraph_var_focus *) string option ->
   unit
 
 val add_prefix_to_each_line : string -> (int -> string) -> string
