@@ -151,6 +151,15 @@ let dbgraph_var_focus =
         makes the graph output only information concerning the variable passed.|}
   )
 
+let dbgraph_depth =
+  Arg.(
+    value
+    & opt (int) 3
+    & info [ "dbgraph_depth" ] ~docv:"DBGRAPH_DEPTH"
+    ~doc:
+      {|To be used in conjunction with the --debgraph-var-focus option.
+      This options sets the max depth at which the dependency graph is explored.|})
+
 let comparison_error_margin_cli =
   Arg.(
     value
@@ -197,7 +206,8 @@ let mlang_t f =
     $ display_time $ dbg_graph_file $ no_print_cycles $ backend $ output
     $ run_all_tests $ dgfip_test_filter $ run_test $ mpp_function
     $ optimize_unsafe_float $ precision $ roundops $ comparison_error_margin_cli
-    $ income_year_cli $ m_clean_calls $ dgfip_options $ dbgraph_var_focus)
+    $ income_year_cli $ m_clean_calls $ dgfip_options
+    $ dbgraph_depth $ dbgraph_var_focus)
 
 let info =
   let doc =
@@ -313,6 +323,8 @@ let income_year = ref 0
 
 let dbgraph_var_focus = ref None
 
+let dbgraph_depth = ref 3
+
 let set_all_arg_refs (files_ : files) applications_ (without_dgfip_m_ : bool)
     (debug_ : bool) (var_info_debug_ : string list) (display_time_ : bool)
     (dbg_graph_file_ : string) (no_print_cycles_ : bool)
@@ -322,6 +334,7 @@ let set_all_arg_refs (files_ : files) applications_ (without_dgfip_m_ : bool)
     (round_ops_ : round_ops) (backend_ : backend) (dgfip_test_filter_ : bool)
     (mpp_function_ : string) (dgfip_flags_ : Dgfip_options.flags)
     (execution_mode_ : execution_mode)
+    (dbgraph_depth_ : int)
     (dbgraph_var_focus_ : string option) =
   source_files := files_;
   application_names := applications_;
@@ -346,6 +359,7 @@ let set_all_arg_refs (files_ : files) applications_ (without_dgfip_m_ : bool)
   mpp_function := mpp_function_;
   dgfip_flags := dgfip_flags_;
   dbgraph_var_focus := dbgraph_var_focus_;
+  dbgraph_depth := dbgraph_depth_;
   match output_file_ with
   | None -> ()
   | Some o -> (

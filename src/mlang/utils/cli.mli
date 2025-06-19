@@ -40,6 +40,7 @@ val mlang_t :
   int option ->
   bool ->
   string list option ->
+  int ->
   string option ->
   'a) ->
   'a Cmdliner.Term.t
@@ -143,6 +144,8 @@ val execution_mode : execution_mode ref
 
 val dbgraph_var_focus: string option ref
 
+val dbgraph_depth: int ref
+
 val set_all_arg_refs :
   (* files *) files ->
   (* applications *) string list ->
@@ -164,6 +167,7 @@ val set_all_arg_refs :
   (* mpp_function *) string ->
   (* dgfip_flags *) Dgfip_options.flags ->
   (* execution_mode *) execution_mode ->
+  (* dbgraph_depth *) int ->
   (* dbgraph_var_focus *) string option ->
   unit
 

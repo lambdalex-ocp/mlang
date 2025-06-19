@@ -70,7 +70,7 @@ let output_dot_eval_program (dbg : G.t) (ctxd : G.ctx_dbg) (file : string) :
   | None -> dbg
   | Some v ->
       let v = StrMap.find v ctxd in
-      let subgraph = subgraph_depth 3 dbg v in
+      let subgraph = subgraph_depth !Cli.dbgraph_depth dbg v in
       Format.printf "subdbg : %d vertices -- %d edges@." (G.nb_vertex subgraph)
     (G.nb_edges subgraph);
     subgraph in

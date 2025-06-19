@@ -101,6 +101,7 @@ let set_opts (files : string list) (application_names : string list)
     (roundops : string option) (comparison_error_margin : float option)
     (income_year : int option) (m_clean_calls : bool)
     (dgfip_options : string list option)
+    (dbgraph_depth: int)
     (dbgraph_var_focus : string option)
     =
   let value_sort =
@@ -168,7 +169,7 @@ let set_opts (files : string list) (application_names : string list)
     var_info_debug display_time dbg_graph_file print_cycles output
     optimize_unsafe_float m_clean_calls comparison_error_margin income_year
     value_sort round_ops backend dgfip_test_filter mpp_function dgfip_flags
-    execution_mode dbgraph_var_focus
+    execution_mode dbgraph_depth dbgraph_var_focus
 
 let parse () =
   let current_progress, finish = Cli.create_progress_bar "Parsing" in
