@@ -65,15 +65,17 @@ let output_dot_eval_program (dbg : G.t) (ctxd : G.ctx_dbg) (file : string) :
            Cli.warning_print "weird stuff on %s@." (Pos.unmark var.name)
        | _ -> ())
      dbg; *)
-  let v_annee = StrMap.find "V_ANCSDED" ctxd in
-  let _, _, annee = G.V.label v_annee in
-  let annee = match annee with Float f -> int_of_float f | Undefined -> 0 in
-  let v = StrMap.find (if annee = 2051 then "VARC" else "TXMARJ") ctxd in
-  let subdbg = if annee = 2051 then dbg else subgraph_depth 3 dbg v in
-  Format.printf "subdbg : %d vertices -- %d edges@." (G.nb_vertex subdbg)
-    (G.nb_edges subdbg);
+  let focus = !Cli.dbgraph_var_focus in
+  let subgraph = match focus with
+  | None -> dbg
+  | Some v ->
+      let v = StrMap.find v ctxd in
+      let subgraph = subgraph_depth 3 dbg v in
+      Format.printf "subdbg : %d vertices -- %d edges@." (G.nb_vertex subgraph)
+    (G.nb_edges subgraph);
+    subgraph in
   fun () ->
     let oc = open_out file in
     let fmt = Format.formatter_of_out_channel oc in
-    Format.fprintf fmt "%a@." to_dot subdbg;
+    Format.fprintf fmt "%a@." to_dot subgraph;
     close_out oc

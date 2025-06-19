@@ -141,6 +141,16 @@ let roundops =
            running on a mainframe. In this case, the size of the long type has \
            to be specified; it can be either 32 or 64.")
 
+let dbgraph_var_focus =
+  Arg.(
+    value
+    & opt (some string) None
+    & info [ "dbgraph_var_focus" ] ~docv:"DBGRAPH_VAR_FOCUCS"
+      ~doc:
+        {|To be used in conjunction with the --debug option. This 
+        makes the graph output only information concerning the variable passed.|}
+  )
+
 let comparison_error_margin_cli =
   Arg.(
     value
@@ -187,7 +197,7 @@ let mlang_t f =
     $ display_time $ dbg_graph_file $ no_print_cycles $ backend $ output
     $ run_all_tests $ dgfip_test_filter $ run_test $ mpp_function
     $ optimize_unsafe_float $ precision $ roundops $ comparison_error_margin_cli
-    $ income_year_cli $ m_clean_calls $ dgfip_options)
+    $ income_year_cli $ m_clean_calls $ dgfip_options $ dbgraph_var_focus)
 
 let info =
   let doc =
@@ -301,6 +311,8 @@ let comparison_error_margin = ref 0.000001
 
 let income_year = ref 0
 
+let dbgraph_var_focus = ref None
+
 let set_all_arg_refs (files_ : files) applications_ (without_dgfip_m_ : bool)
     (debug_ : bool) (var_info_debug_ : string list) (display_time_ : bool)
     (dbg_graph_file_ : string) (no_print_cycles_ : bool)
@@ -309,7 +321,8 @@ let set_all_arg_refs (files_ : files) applications_ (without_dgfip_m_ : bool)
     (income_year_ : int option) (value_sort_ : value_sort)
     (round_ops_ : round_ops) (backend_ : backend) (dgfip_test_filter_ : bool)
     (mpp_function_ : string) (dgfip_flags_ : Dgfip_options.flags)
-    (execution_mode_ : execution_mode) =
+    (execution_mode_ : execution_mode)
+    (dbgraph_var_focus_ : string option) =
   source_files := files_;
   application_names := applications_;
   without_dgfip_m := without_dgfip_m_;
@@ -332,6 +345,7 @@ let set_all_arg_refs (files_ : files) applications_ (without_dgfip_m_ : bool)
   dgfip_test_filter := dgfip_test_filter_;
   mpp_function := mpp_function_;
   dgfip_flags := dgfip_flags_;
+  dbgraph_var_focus := dbgraph_var_focus_;
   match output_file_ with
   | None -> ()
   | Some o -> (
