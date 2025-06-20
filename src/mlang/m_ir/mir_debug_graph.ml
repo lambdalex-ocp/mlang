@@ -36,9 +36,12 @@ let to_dot (fmt : Format.formatter) (g : G.t) : unit =
       Format.asprintf "%d" vhash
 
     let vertex_attributes (v : vertex) =
+      let (var, _), _, _ = V.label v in
+      let var_name = Pos.unmark var.name in
       [
         `Label (Format.asprintf "%a" G.pp_vertex v);
         `Shape `Box;
+        `Comment var_name;
         `Style `Filled;
         (let (var, _), _, _ = G.V.label v in
          `Fillcolor
