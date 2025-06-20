@@ -39,3 +39,8 @@ clean: FORCE remise_a_zero_versionnage
 	rm -f doc/doc.html
 	dune clean
 
+test:
+	_build/default/src/main.exe tests/mlang/${test}.m -A app --mpp_function target --dgfip_options='' --debug --run_test tests/mlang/${test}.irj --dbgraph_var_focus ${focus} --dbgraph_depth ${depth}
+
+c:
+	_build/default/src/main.exe tests/mlang/${test}.m -A app -b dgfip_c --mpp_function target --dgfip_options='' --output output/${test}.c --debug
