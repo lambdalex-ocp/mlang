@@ -1,0 +1,25 @@
+digraph G {
+  node [style="filled", ];
+  3 [fillcolor="#FFA500", comment="X", shape=box, label="X = 3.
+
+ X = 3",
+     style="filled", ];
+  4 [fillcolor="#FFFFFF", comment="Y", shape=box, label="Y = 6.
+
+ Y = 3 + X",
+     style="filled", ];
+  5 [fillcolor="#FFFFFF", comment="TXMARJ", shape=box,
+     label="TXMARJ = 6.
+
+ TXMARJ = Y", style="filled", ];
+  6 [fillcolor="#FFFFFF", comment="ANNEE", shape=box,
+     label="ANNEE = 6.
+
+ ANNEE = TXMARJ", style="filled", ];
+  
+  
+  4 -> 3;
+  5 -> 4;
+  6 -> 5;
+  
+  }

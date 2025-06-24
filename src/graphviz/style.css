@@ -1,0 +1,22 @@
+.container {
+  display: flex;
+  flex: 1;
+  height: 100%;
+}
+
+#cy {
+  flex: 1;
+  min-height: 300px;
+}
+
+html, body {
+  height: 100%;
+  margin-top: 0px;
+}
+
+#left-panel {
+  border-right: 1px solid gray;
+  padding-top: 0;
+  margin-top: 0;
+  margin-right: 1rem;
+}
