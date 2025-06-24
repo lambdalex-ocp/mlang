@@ -16,7 +16,7 @@ let var_names = Convertor.get_var_names(dot_graph);
 let dom_vnames = document.getElementById('var-list');
 let make_div = name => {
   let div = document.createElement('div');
-  div.className = "var-name";
+  div.className = "var-name btn";
   div.innerHTML = name;
   div.addEventListener("click", () => {
     state = State.set_focus(state, Option.some(name))
@@ -28,7 +28,7 @@ divs.forEach(div => dom_vnames.appendChild(div));
 
 
 let cy = Graph.make(graph.elements);
-let state = State.make (cy);
+let state = State.make(cy);
 
 /* Webpage dynamics */
 
@@ -36,4 +36,8 @@ const input = document.querySelector("#depth-slider");
 input.addEventListener("input", ev => {
   let depth = event.target.value;
   state = State.set_depth(state, depth);
+})
+const reset_focus_btn = document.querySelector("#reset-focus-btn");
+reset_focus_btn.addEventListener('click', () => {
+  State.set_focus(state, Option.none())
 })

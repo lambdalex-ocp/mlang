@@ -1,9 +1,9 @@
 let make_option = () => {
   let some = payload => {
-    return {kind: "some", payload}
+    return {kind: "some", payload, toString: t => `some(${payload})`}
   }
 
-  let none = () => ({kind: "none"});
+  let none = () => ({kind: "none", toString: t => `none`});
 
   let is_some = t => t.kind == 'some'
   let is_none = t => t.kind == 'none'

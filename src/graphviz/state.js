@@ -31,6 +31,7 @@ let make = (cy) => {
   let depth = 0;
   let state = {focus, depth, cy};
   set_depth(state, depth);
+  set_focus(state, focus);
   draw_graph(state);
   return state;
 }
@@ -38,12 +39,16 @@ let make = (cy) => {
 let set_focus = (state, focus) => {
   state = {...state, focus};
   draw_graph(state);
+  let label = document.querySelector('#focused-var-label');
+  label.textContent = focus;
   return state;
 }
 
 let set_depth = (state, depth) => {
   state = {...state, depth};
   let elt = document.querySelector('#depth-value');
+  let slider = document.querySelector('#depth-slider');
+  slider.value = depth;
   elt.textContent = depth;
   draw_graph(state);
   return state;
