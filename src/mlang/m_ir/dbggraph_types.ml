@@ -17,7 +17,7 @@ end)
 
 let pp_vertex fmt (v : vertex) =
   let (var, idx_opt), vdef, vval = V.label v in
-  Format.fprintf fmt "@[<v>%s%a = %a@,@,@]@[<hov>%a@]" (Pos.unmark var.name)
+  Format.fprintf fmt "@[<v>%s%a = %a@.@.@]@[<hov>%a@]" (Pos.unmark var.name)
     (Format.pp_print_option
        ~none:(fun _ () -> ())
        (fun fmt idx -> Format.fprintf fmt "[%a]" Com.format_literal idx))
@@ -43,3 +43,7 @@ type ctx_dbg = vertex StrMap.t
 (* StrMap because we're only keeping track of the last vertex seen with a given name for now *)
 
 let empty_ctxd = StrMap.empty
+
+let var_name_of_vertex v =
+  let ((var, _), _, _) = V.label v in
+  Pos.unmark var.name

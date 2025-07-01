@@ -68,7 +68,7 @@ let check_test (program : Mir.program) (test_name : string)
   (match (dep_graph_file, dbg_info) with
   | None, None -> ()
   | Some dep_graph_file, Some (dbg, ctxd) ->
-      Mir_debug_graph.output_dot_eval_program dbg ctxd dep_graph_file ()
+      Mir_debug_graph.output_json_eval_program dbg ctxd dep_graph_file ()
   | _ -> assert false);
   (* should not happen, invariant is that dbg_info is None iff we're not outputting any dep_graph *)
   let check_vars exp vars =

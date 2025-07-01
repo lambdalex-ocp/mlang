@@ -55,17 +55,29 @@ let to_dot (fmt : Format.formatter) (g : G.t) : unit =
   end) in
   GPr.fprint_graph fmt g
 
-let output_dot_eval_program (dbg : G.t) (ctxd : G.ctx_dbg) (file : string) :
-    unit -> unit =
-  (* G.iter_vertex
-     (fun v ->
-       let var, vdef, _vval = G.V.label v in
-       match vdef with
-       | None when Com.Var.cat_var_loc var = Some Com.CatVar.LocInput ->
-           Cli.warning_print "weird stuff on %s@." (Pos.unmark var.name)
-       | _ -> ())
-     dbg; *)
-  let focus = !Cli.dbgraph_var_focus in
+let to_json (fmt: Format.formatter) (g : G.t) : unit =
+  Format.fprintf fmt "let graph = [@.";
+  let pp_vertex v =
+    let (var, _), _, _ = G.V.label v in
+    let var_name = Pos.unmark var.name in
+    Format.fprintf fmt {|{"data":{ name: "%s", label: `%a`}},@.|} var_name G.pp_vertex v
+  in
+  Format.printf "writing vertices...@.";
+  G.iter_vertex pp_vertex g;
+  let print_edge (e : G.E.t) =
+    let src = G.E.src e in
+    let dst = G.E.dst e in
+    let src = G.var_name_of_vertex src in
+    let dst = G.var_name_of_vertex dst in
+    Format.fprintf fmt {|{"data": {source: "%s", target: "%s"}},@.|} src dst
+  in
+  Format.printf "writing edges...@.";
+  G.iter_edges_e print_edge g;
+  Format.fprintf fmt "]@.";
+  Format.fprintf fmt "@.export default graph;@."
+
+let calc_subgraph dbg ctxd =
+ let focus = !Cli.dbgraph_var_focus in
   let subgraph = match focus with
   | None -> dbg
   | Some v ->
@@ -74,8 +86,33 @@ let output_dot_eval_program (dbg : G.t) (ctxd : G.ctx_dbg) (file : string) :
       Format.printf "subdbg : %d vertices -- %d edges@." (G.nb_vertex subgraph)
     (G.nb_edges subgraph);
     subgraph in
+  subgraph
+
+let write_file filename pp subgraph =
   fun () ->
-    let oc = open_out file in
+    let oc = open_out filename in
     let fmt = Format.formatter_of_out_channel oc in
-    Format.fprintf fmt "%a@." to_dot subgraph;
+    Format.fprintf fmt "%a@." pp subgraph;
     close_out oc
+
+let output_dot_eval_program (dbg : G.t) (ctxd : G.ctx_dbg) (file : string) :
+    unit -> unit =
+  let subgraph = calc_subgraph dbg ctxd in
+  let filename = file ^ ".dot" in
+  write_file filename to_dot subgraph
+
+let output_json_eval_program dbg ctxd file =
+  Format.printf "calculating subgraph...@.";
+  let subgraph = calc_subgraph dbg ctxd in
+  let filename = file ^ ".js" in
+  write_file filename to_json subgraph
+  (* G.iter_vertex
+     (fun v ->
+       let var, vdef, _vval = G.V.label v in
+       match vdef with
+       | None when Com.Var.cat_var_loc var = Some Com.CatVar.LocInput ->
+           Cli.warning_print "weird stuff on %s@." (Pos.unmark var.name)
+       | _ -> ())
+     dbg; *)
+ 
+  
