@@ -14,19 +14,30 @@ import cytoscape from './cytoscape.esm.js';
 let calc_subg = (subg, depth) => {
   let root = subg;
   for (let i = 0; i < depth; ++i) {
-    root = root.union(root.neighbourhood());
+    root = root.union(root.outgoers());
   }
   return root;
 }
 
 let focus_var = (state, var_name) => {
-  let subg = state.cy.$(`node[name = "${var_name}"]`)
+  let root = state.cy.$(`node[name = "${var_name}"]`)
   let depth = state.depth;
-  subg = calc_subg(subg, depth);
+  let subg = calc_subg(root, depth);
   state.subg = subg;
+  state.cy.center(root);
   return state;
 }
 
+let unfold_var = (state, var_name) => {
+  let root = state.cy.$(`node[name = "${var_name}"]`);
+  let subg = calc_subg(root, 1);
+  subg.nodes().each(ele => {
+    console.log(ele);
+    ele.style({'background-color': "lightblue"})
+  });
+  state.subg = state.subg.union(subg);
+  return state;
+}
 
 /**
  * @param {state} state - 
@@ -38,8 +49,7 @@ let draw_graph = (state) => {
   state.cy.startBatch();
   state.subg.show();
   state.cy.endBatch();
-  let layout = state.subg.layout(Graph.layouts.bf);
-  layout.run();
+  state.subg.layout(Graph.layouts.cose).run();
   console.log("layout done");
 }
 
@@ -54,6 +64,14 @@ let make = (elts, doc_id) => {
   let depth = 0;
   let subg = cy.collection();
   let state = {focus, depth, cy, subg};
+  cy.on('cxttap', "node", function(event) {
+    let name = event.target.id();
+    console.log('something has been clicked:', name);
+    state.depth = 1;
+    focus_var(state, name); 
+    // unfold_var(state, name);
+    draw_graph(state);
+  });
   set_depth(state, depth);
   set_focus(state, focus);
   return state;
