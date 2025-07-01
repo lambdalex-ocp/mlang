@@ -19,7 +19,7 @@ let common_style = {
   edge: {
     'target-arrow-shape': 'triangle',
     'target-arrow-color': 'gray',
-    'curve-style': 'haystack'
+    'curve-style': 'straight'
   }
 }
 
@@ -53,13 +53,21 @@ let style = [
 ]
 
 let layouts = {
-  concentric: {name: 'concentric'},
+  concentric: {
+    name: 'concentric',
+    padding: 0,
+    nodeDimensionsIncludeLabels: true,
+    fit:false
+  },
   bf: {
     name: 'breadthfirst',
-    spacingFactor: 0.2,
-    circle: 'true',
+    circle: true,
+    spacingFactor: 0.3,
     padding: 0,
-    fit: true,
+  },
+  cose: {
+    name: 'cose',
+    animate: 'false',
   }
 }
 
@@ -67,7 +75,7 @@ let make = (elts, id) => cytoscape({
   container: document.getElementById(id),
   elements: elts,
   style: style,
-  layout : layouts.concentric,
+  layout : layouts.bf,
   minZoom: 1.0,
 })
 
