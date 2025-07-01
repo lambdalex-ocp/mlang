@@ -1,3 +1,4 @@
+//@ts-check
 /* consumes a dot json and converts it to something
  * usable by cytoscape */
 let convert = graph => {
@@ -21,9 +22,15 @@ let convert = graph => {
   return ret;
 }
 
-let get_var_names = dotg => {
-  let get_vname = obj => obj.comment;
-  return dotg.objects.map(get_vname)
+let convert_from_json = graph => {
+  let add_id = obj => ({data: {...obj.data, id: obj.data.name}});
+  return graph.map(elt => add_id(elt))
 }
 
-export default {convert, get_var_names}
+let get_var_names = graph => {
+  let names = graph.filter(v => v.data.name != undefined)
+    .map(v => v.data.name);
+  return names;
+}
+
+export default {get_var_names, convert_from_json}
