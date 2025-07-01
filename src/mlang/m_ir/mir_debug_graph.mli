@@ -14,3 +14,6 @@
 
 val output_dot_eval_program :
   Dbggraph_types.t -> Dbggraph_types.ctx_dbg -> string -> unit -> unit
+
+val output_json_eval_program :
+  Dbggraph_types.t -> Dbggraph_types.ctx_dbg -> string -> unit -> unit

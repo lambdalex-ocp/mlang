@@ -59,7 +59,7 @@ let dbg_graph_file =
     "Name of the file where the debug graph should be output (use with --debug)"
   in
   Arg.(
-    value & opt file "dbg_graph.dot"
+    value & opt file "dbg_graph"
     & info [ "dbg_graph_file"; "g" ] ~docv:"DEBUG_GRAPH" ~doc)
 
 let no_print_cycles =
