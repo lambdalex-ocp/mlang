@@ -1,25 +1,44 @@
+//@ts-check
 import cytoscape from "./cytoscape.esm.js"
 
-let default_style = {
-  node: 
-  {
+let common_style = {
+  node: {
     shape: 'rectangle',
-    width: 'label',
+    width: "label",
     height: 'label',
     'text-wrap': 'wrap',
     content: 'data(label)',
     'text-valign': 'center',
-    'text-halign': 'center',
     padding: 10,
-    "background-color": 'pink',
-    visibility: 'hidden',
+    'min-width': '10em',
+    'font-size': '10px',
+    'border-width': '1px',
+    'border-color': 'black',
+    'border-style': 'solid',
   },
   edge: {
-    visibility: 'hidden',
     'target-arrow-shape': 'triangle',
     'target-arrow-color': 'gray',
-    'curve-style': 'bezier',
+    'curve-style': 'haystack'
   }
+}
+
+let default_style = {
+  node: 
+  {...common_style.node,
+    display: 'none',
+    'background-color': 'pink',
+  },
+  edge: {...common_style.edge,
+    display: 'none',
+  }
+}
+
+let visible_style = {
+  node: {...common_style.node,
+    'background-color': 'lightblue',
+  },
+  edge: common_style.edge
 }
 
 let style = [
@@ -33,11 +52,28 @@ let style = [
   }
 ]
 
-let make = (elts) => cytoscape({
-  container: document.getElementById('cy'),
+let layouts = {
+  concentric: {name: 'concentric'},
+  bf: {
+    name: 'breadthfirst',
+    spacingFactor: 0.2,
+    circle: 'true',
+    padding: 0,
+    fit: true,
+  }
+}
+
+let make = (elts, id) => cytoscape({
+  container: document.getElementById(id),
   elements: elts,
   style: style,
-  layout : { name: 'grid', rows: 2}
+  layout : layouts.concentric,
+  minZoom: 1.0,
+})
+
+let make_headless = (elts) => cytoscape({
+  elements: elts,
+  headless: true,
 })
 
 let reset_style = cy => {
@@ -45,4 +81,4 @@ let reset_style = cy => {
   cy.edges().each(ele => ele.style(default_style.edge));
 }
 
-export default { make, reset_style }
+export default { make, reset_style, layouts, make_headless, common_style}

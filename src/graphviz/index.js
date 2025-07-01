@@ -1,18 +1,17 @@
 //@ts-check
-import cytoscape from "./cytoscape.esm.js"
-import dot_graph from "./dbg_graph.json" with {type: 'json'}
+// import dot_graph from "./dbg_graph.json" with {type: 'json'}
+import dbg_graph from "./dbg_graph.js"
 import Convertor from "./convertor.js"
 import { Option }  from "./stdlib.js"
 import State from "./state.js"
-import Graph from "./graph.js"
 
 
-console.log(dot_graph);
-let graph = Convertor.convert(dot_graph);
+let graph = Convertor.convert_from_json(dbg_graph);
+console.log(graph);
 
 /* Setup html */
 
-let var_names = Convertor.get_var_names(dot_graph);
+let var_names = Convertor.get_var_names(graph);
 let dom_vnames = document.getElementById('var-list');
 let make_div = name => {
   let div = document.createElement('div');
@@ -26,17 +25,16 @@ let make_div = name => {
 let divs = var_names.map(make_div);
 divs.forEach(div => dom_vnames.appendChild(div));
 
-
-let cy = Graph.make(graph.elements);
-let state = State.make(cy);
+let state = State.make(graph, 'cy');
 
 /* Webpage dynamics */
 
 const input = document.querySelector("#depth-slider");
-input.addEventListener("input", ev => {
+input.addEventListener("input", event => {
   let depth = event.target.value;
   state = State.set_depth(state, depth);
 })
+
 const reset_focus_btn = document.querySelector("#reset-focus-btn");
 reset_focus_btn.addEventListener('click', () => {
   State.set_focus(state, Option.none())
