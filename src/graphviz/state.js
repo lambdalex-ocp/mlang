@@ -85,7 +85,6 @@ let make = (elts, doc_id) => {
     focus_var(state, name, neighbors_fs.incomers);
     draw_graph(state);
   })
-  set_depth(state, depth);
   set_focus(state, focus);
   return state;
 }
@@ -111,20 +110,4 @@ let set_focus = (state, focus) => {
   return state;
 }
 
-/**
- * @param {state} state - 
- * @param {Number} depth - 
- * @returns {state} - 
- */
-let set_depth = (state, depth) => {
-  state = {...state, depth};
-  let elt = document.querySelector('#depth-value');
-  let slider = document.querySelector('#depth-slider');
-  state.subg = calc_subg(state.subg, depth, node => node.outgoers());
-  slider.value = depth;
-  elt.textContent = depth.toString();
-  draw_graph(state);
-  return state;
-}
-
-export default {make, set_focus, set_depth}
+export default {make, set_focus}
