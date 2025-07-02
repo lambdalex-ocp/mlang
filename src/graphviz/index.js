@@ -29,12 +29,6 @@ let state = State.make(graph, 'cy');
 
 /* Webpage dynamics */
 
-const input = document.querySelector("#depth-slider");
-input.addEventListener("input", event => {
-  let depth = event.target.value;
-  state = State.set_depth(state, depth);
-})
-
 const reset_focus_btn = document.querySelector("#reset-focus-btn");
 reset_focus_btn.addEventListener('click', () => {
   State.set_focus(state, Option.none())
