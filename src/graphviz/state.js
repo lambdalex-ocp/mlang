@@ -11,31 +11,38 @@ import cytoscape from './cytoscape.esm.js';
  * @property {Object} subg
  */
 
-let calc_subg = (subg, depth) => {
+let neighbors_fs = {
+  incomers: node => node.incomers(),
+  outgoers: node => node.outgoers(),
+  neighbors: node => node.neighbors(),
+}
+
+/**
+ * @param {Object} subg - 
+ * @param {Number} depth - 
+ * @param {Function} neighbors_f - 
+ * @returns {Object} - 
+ */
+let calc_subg = (subg, depth, neighbors_f) => {
   let root = subg;
   for (let i = 0; i < depth; ++i) {
-    root = root.union(root.outgoers());
+    root = root.union(neighbors_f(root));
   }
   return root;
 }
 
-let focus_var = (state, var_name) => {
+/**
+ * @param {state} state - 
+ * @param {String} var_name - 
+ * @param {Function} neighbors_f - 
+ * @returns {state} - 
+ */
+let focus_var = (state, var_name, neighbors_f) => {
   let root = state.cy.$(`node[name = "${var_name}"]`)
   let depth = state.depth;
-  let subg = calc_subg(root, depth);
+  let subg = calc_subg(root, depth, neighbors_f);
   state.subg = subg;
   state.cy.center(root);
-  return state;
-}
-
-let unfold_var = (state, var_name) => {
-  let root = state.cy.$(`node[name = "${var_name}"]`);
-  let subg = calc_subg(root, 1);
-  subg.nodes().each(ele => {
-    console.log(ele);
-    ele.style({'background-color': "lightblue"})
-  });
-  state.subg = state.subg.union(subg);
   return state;
 }
 
@@ -68,10 +75,16 @@ let make = (elts, doc_id) => {
     let name = event.target.id();
     console.log('something has been clicked:', name);
     state.depth = 1;
-    focus_var(state, name); 
+    focus_var(state, name, neighbors_fs.outgoers); 
     // unfold_var(state, name);
     draw_graph(state);
   });
+  cy.on('click', 'node', event => {
+    let name = event.target.id();
+    state.depth = 1;
+    focus_var(state, name, neighbors_fs.incomers);
+    draw_graph(state);
+  })
   set_depth(state, depth);
   set_focus(state, focus);
   return state;
@@ -88,7 +101,7 @@ let set_focus = (state, focus) => {
     state.subg = state.cy.collection();
   }
   let add_subg = (var_name) => {
-    state = focus_var(state, var_name);
+    state = focus_var(state, var_name, neighbors_fs.outgoers);
   }
   Option.match(focus, {fnone: reset_subg, fsome: add_subg});
   console.log('subg:', state.subg);
@@ -107,7 +120,7 @@ let set_depth = (state, depth) => {
   state = {...state, depth};
   let elt = document.querySelector('#depth-value');
   let slider = document.querySelector('#depth-slider');
-  state.subg = calc_subg(state.subg, depth);
+  state.subg = calc_subg(state.subg, depth, node => node.outgoers());
   slider.value = depth;
   elt.textContent = depth.toString();
   draw_graph(state);
