@@ -59,12 +59,21 @@ let to_dot (fmt : Format.formatter) (g : G.t) : unit =
   GPr.fprint_graph fmt g
 
 let to_json (fmt: Format.formatter) (g : G.t) : unit =
+  let open Format in
   Format.fprintf fmt "let graph = [@.";
   let pp_vertex v =
-    let (var, _), _, _ = G.V.label v in
+    let (var, _), def, value = G.V.label v in
     let var_name = Pos.unmark var.name in
-    Format.fprintf fmt {|{"data":{ name: "%s", label: `%a`}},@.|} var_name G.pp_vertex v
-  in
+    let is_input = match Com.Var.cat_var_loc var with
+    | Some Com.CatVar.LocInput -> true
+    | _ -> false in
+    let pp_string fmt s = fprintf fmt "%s" s in
+    let pp_none fmt () = fprintf fmt "input var" in
+    let pp_opt = pp_print_option ~none:pp_none pp_string in
+    Format.fprintf fmt
+      {|{"data":{ name: "%s", def: `%a`, value: `%a`, input: %b}},@.|}
+      var_name pp_opt def Com.format_literal value is_input
+    in
   Format.printf "writing vertices...@.";
   G.iter_vertex pp_vertex g;
   let print_edge (e : G.E.t) =
@@ -73,21 +82,21 @@ let to_json (fmt: Format.formatter) (g : G.t) : unit =
     let src = G.var_name_of_vertex src in
     let dst = G.var_name_of_vertex dst in
     Format.fprintf fmt {|{"data": {source: "%s", target: "%s"}},@.|} src dst
-  in
+    in
   Format.printf "writing edges...@.";
   G.iter_edges_e print_edge g;
   Format.fprintf fmt "]@.";
   Format.fprintf fmt "@.export default graph;@."
 
 let calc_subgraph dbg ctxd =
- let focus = !Cli.dbgraph_var_focus in
+  let focus = !Cli.dbgraph_var_focus in
   let subgraph = match focus with
   | None -> dbg
   | Some v ->
       let v = StrMap.find v ctxd in
       let subgraph = subgraph_depth !Cli.dbgraph_depth dbg v in
       Format.printf "subdbg : %d vertices -- %d edges@." (G.nb_vertex subgraph)
-    (G.nb_edges subgraph);
+      (G.nb_edges subgraph);
     subgraph in
   subgraph
 
@@ -99,10 +108,10 @@ let write_file filename pp subgraph =
     close_out oc
 
 let output_dot_eval_program (dbg : G.t) (ctxd : G.ctx_dbg) (file : string) :
-    unit -> unit =
-  let subgraph = calc_subgraph dbg ctxd in
-  let filename = file ^ ".dot" in
-  write_file filename to_dot subgraph
+  unit -> unit =
+    let subgraph = calc_subgraph dbg ctxd in
+    let filename = file ^ ".dot" in
+    write_file filename to_dot subgraph
 
 let output_json_eval_program dbg ctxd file =
   Format.printf "calculating subgraph...@.";
@@ -112,10 +121,10 @@ let output_json_eval_program dbg ctxd file =
   (* G.iter_vertex
      (fun v ->
        let var, vdef, _vval = G.V.label v in
-       match vdef with
+match vdef with
        | None when Com.Var.cat_var_loc var = Some Com.CatVar.LocInput ->
            Cli.warning_print "weird stuff on %s@." (Pos.unmark var.name)
-       | _ -> ())
+  | _ -> ())
      dbg; *)
- 
-  
+
+
