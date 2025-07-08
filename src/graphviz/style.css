@@ -46,3 +46,13 @@ html, body {
   padding-top: 1rem;
   padding-bottom: 1rem;
 }
+
+#var-info {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 1rem;
+  border: 1px solid black;
+  max-width: 20rem;
+  background-color: white;
+}

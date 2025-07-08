@@ -1,13 +1,13 @@
 //@ts-check
 import {Option} from './stdlib.js'
 import Graph from './graph.js'
-import cytoscape from './cytoscape.esm.js';
 
 /**
  * @typedef {Object} state
  * @property {Object} focus
  * @property {Number} depth
  * @property {Object} cy
+ * @property {String} var_info
  * @property {Object} subg
  */
 
@@ -43,6 +43,24 @@ let focus_var = (state, var_name, neighbors_f) => {
   let subg = calc_subg(root, depth, neighbors_f);
   state.subg = subg;
   state.cy.center(root);
+  update_var_info(state, root);
+  return state;
+}
+
+/**
+ * @param {state} state - 
+ * @param {Object} node - 
+ * @returns {state} - 
+ */
+let update_var_info = (state, node) => {
+  let def = node.data('def');
+  let val = node.data('value');
+  let var_info = def + '<br><br>' + val;
+  state.var_info = var_info;
+  let dom_node = document.getElementById('var-info-par');
+  if (dom_node !== null) {
+    dom_node.innerHTML = var_info;
+  }
   return state;
 }
 
@@ -50,14 +68,12 @@ let focus_var = (state, var_name, neighbors_f) => {
  * @param {state} state - 
  */
 let draw_graph = (state) => {
-  Graph.reset_style(state.cy);
+  // Graph.reset_style(state.cy);
   state.cy.elements().hide();
-  console.log('state.subg length:', state.subg.nodes().length);
   state.cy.startBatch();
   state.subg.show();
   state.cy.endBatch();
   state.subg.layout(Graph.layouts.cose).run();
-  console.log("layout done");
 }
 
 /**
@@ -70,10 +86,10 @@ let make = (elts, doc_id) => {
   let focus = Option.none();
   let depth = 0;
   let subg = cy.collection();
-  let state = {focus, depth, cy, subg};
+  let var_info = "";
+  let state = {focus, depth, cy, subg, var_info};
   cy.on('cxttap', "node", function(event) {
     let name = event.target.id();
-    console.log('something has been clicked:', name);
     state.depth = 1;
     focus_var(state, name, neighbors_fs.outgoers); 
     // unfold_var(state, name);
@@ -103,10 +119,13 @@ let set_focus = (state, focus) => {
     state = focus_var(state, var_name, neighbors_fs.outgoers);
   }
   Option.match(focus, {fnone: reset_subg, fsome: add_subg});
-  console.log('subg:', state.subg);
   draw_graph(state);
   let label = document.querySelector('#focused-var-label');
-  label.textContent = focus;
+  if (label !== null) {
+    label.textContent = focus;
+  } else {
+    throw Error();
+  }
   return state;
 }
 
