@@ -1,13 +1,13 @@
 //@ts-check
-// import dot_graph from "./dbg_graph.json" with {type: 'json'}
-import dbg_graph from "./dbg_graph.js"
+import dbg_graph from "./new_dbg_graph.json" with {type: 'json'}
+// import dbg_graph from "./new_dbg_graph.js"
 import Convertor from "./convertor.js"
 import { Option }  from "./stdlib.js"
 import State from "./state.js"
 import Fuse from "./fuse.js"
 
 
-let graph = Convertor.convert_from_json(dbg_graph);
+let graph = Convertor.convert_from_json(dbg_graph.graph);
 console.log(graph);
 
 /* Setup html */
@@ -43,14 +43,12 @@ reset_focus_btn?.addEventListener('click', () => {
 
 const search_input = document.getElementById('var-search-input');
 search_input?.addEventListener('input', event => {
-  let search_name = event.target.value;
+  let search_name = event.target?.value;
   if (search_name == "") {
     update_var_list(search_name);
     return;
   }
-  console.log(search_name);
   let res = vname_fuse.search(search_name);
-  console.log(res);
   update_var_list(res.map(v => v.item));
 })
 

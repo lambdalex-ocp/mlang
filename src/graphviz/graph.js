@@ -7,7 +7,7 @@ let common_style = {
     width: "label",
     height: 'label',
     'text-wrap': 'wrap',
-    content: 'data(label)',
+    content: 'data(name)',
     'text-valign': 'center',
     padding: 10,
     'min-width': '10em',
@@ -20,7 +20,7 @@ let common_style = {
     'target-arrow-shape': 'triangle',
     'target-arrow-color': 'gray',
     'curve-style': 'straight'
-  }
+  },
 }
 
 let default_style = {
@@ -49,6 +49,13 @@ let style = [
   {
     selector: 'edge',
     css: default_style.edge
+  },
+  {
+    selector: 'node[?input]',
+    style: {
+      shape: 'hexagon',
+      'background-color': 'lightblue',
+    }
   }
 ]
 
@@ -83,10 +90,10 @@ let make_headless = (elts) => cytoscape({
   elements: elts,
   headless: true,
 })
+//
+// let reset_style = cy => {
+//   cy.nodes().each(ele => ele.style(default_style.node));
+//   cy.edges().each(ele => ele.style(default_style.edge));
+// }
 
-let reset_style = cy => {
-  cy.nodes().each(ele => ele.style(default_style.node));
-  cy.edges().each(ele => ele.style(default_style.edge));
-}
-
-export default { make, reset_style, layouts, make_headless, common_style}
+export default { make, layouts, make_headless, common_style}
