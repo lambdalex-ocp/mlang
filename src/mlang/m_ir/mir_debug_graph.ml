@@ -60,7 +60,8 @@ let to_dot (fmt : Format.formatter) (g : G.t) : unit =
 
 let to_json (fmt: Format.formatter) (g : G.t) : unit =
   let open Format in
-  Format.fprintf fmt "let graph = [@.";
+  let delim = ref "" in
+  Format.fprintf fmt "{\"graph\":[";
   let pp_vertex v =
     let (var, _), def, value = G.V.label v in
     let var_name = Pos.unmark var.name in
@@ -71,8 +72,10 @@ let to_json (fmt: Format.formatter) (g : G.t) : unit =
     let pp_none fmt () = fprintf fmt "input var" in
     let pp_opt = pp_print_option ~none:pp_none pp_string in
     Format.fprintf fmt
-      {|{"data":{ name: "%s", def: `%a`, value: `%a`, input: %b}},@.|}
-      var_name pp_opt def Com.format_literal value is_input
+      {|%s@.{"data":{ "name": "%s", "def": "%a", "value": "%a", "input": %b}}|}
+      !delim var_name pp_opt def Com.format_literal value is_input;
+    (* Small hack to avoid trailing commas *)
+    delim := ","
     in
   Format.printf "writing vertices...@.";
   G.iter_vertex pp_vertex g;
@@ -81,12 +84,12 @@ let to_json (fmt: Format.formatter) (g : G.t) : unit =
     let dst = G.E.dst e in
     let src = G.var_name_of_vertex src in
     let dst = G.var_name_of_vertex dst in
-    Format.fprintf fmt {|{"data": {source: "%s", target: "%s"}},@.|} src dst
+    Format.fprintf fmt {|,@.{"data": {"source": "%s", "target": "%s"}}|} src dst
     in
   Format.printf "writing edges...@.";
   G.iter_edges_e print_edge g;
-  Format.fprintf fmt "]@.";
-  Format.fprintf fmt "@.export default graph;@."
+  Format.fprintf fmt "]}@."
+  (* Format.fprintf fmt "@.export default graph;@." *)
 
 let calc_subgraph dbg ctxd =
   let focus = !Cli.dbgraph_var_focus in
@@ -116,7 +119,7 @@ let output_dot_eval_program (dbg : G.t) (ctxd : G.ctx_dbg) (file : string) :
 let output_json_eval_program dbg ctxd file =
   Format.printf "calculating subgraph...@.";
   let subgraph = calc_subgraph dbg ctxd in
-  let filename = file ^ ".js" in
+  let filename = file ^ ".json" in
   write_file filename to_json subgraph
   (* G.iter_vertex
      (fun v ->
