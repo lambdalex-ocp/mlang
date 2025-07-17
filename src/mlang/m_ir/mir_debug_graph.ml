@@ -36,18 +36,17 @@ let to_dot (fmt : Format.formatter) (g : G.t) : unit =
       Format.asprintf "%d" vhash
 
     let vertex_attributes (v : vertex) =
-      let (var, _), _, _ = V.label v in
+      let var = Node.get_var @@ V.label v in
       let var_name = Pos.unmark var.name in
       [
         `Label (Format.asprintf "%a" G.pp_vertex v);
         `Shape `Box;
         `Comment var_name;
         `Style `Filled;
-        (let (var, _), _, _ = G.V.label v in
          `Fillcolor
            (match Com.Var.cat_var_loc var with
            | Some Com.CatVar.LocInput -> 0xadd8e6
-           | _ -> if Com.Var.is_given_back var then 0xffa500 else 0xffffff));
+           | _ -> if Com.Var.is_given_back var then 0xffa500 else 0xffffff)
       ]
 
     let get_subgraph (_ : vertex) = None
@@ -63,7 +62,7 @@ let to_json (fmt: Format.formatter) (g : G.t) : unit =
   let delim = ref "" in
   Format.fprintf fmt "{\"graph\":[";
   let pp_vertex v =
-    let (var, _), def, value = G.V.label v in
+    let G.Node.{var; def; vval; _} = G.V.label v in
     let var_name = Pos.unmark var.name in
     let is_input = match Com.Var.cat_var_loc var with
     | Some Com.CatVar.LocInput -> true
@@ -73,7 +72,7 @@ let to_json (fmt: Format.formatter) (g : G.t) : unit =
     let pp_opt = pp_print_option ~none:pp_none pp_string in
     Format.fprintf fmt
       {|%s@.{"data":{ "name": "%s", "def": "%a", "value": "%a", "input": %b}}|}
-      !delim var_name pp_opt def Com.format_literal value is_input;
+      !delim var_name pp_opt def Com.format_literal vval is_input;
     (* Small hack to avoid trailing commas *)
     delim := ","
     in

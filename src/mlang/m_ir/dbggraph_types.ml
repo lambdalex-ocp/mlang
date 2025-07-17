@@ -10,13 +10,30 @@
   You should have received a copy of the GNU General Public License along with
   this program. If not, see <https://www.gnu.org/licenses/>. *)
 
+module Node = struct
+  type t = {
+    var: Com.Var.t;
+    idx_opt: Com.literal option;
+    def: string option;
+    vval: Com.literal
+   }
+
+  let make var idx_opt def vval =
+   {var; idx_opt; def; vval}
+
+  let get_var t = t.var
+end
+
 include Graph.Persistent.Digraph.Abstract (struct
-  type t = (Com.Var.t * Com.literal option) * string option * Com.literal
+  (* type t = (Com.Var.t * Com.literal option) * string option * Com.literal *)
+  include Node
   (* The literal option is an optional index in the table. It should be set to Some _ only if the Com.Var.t is a table *)
 end)
 
+open Node
+
 let pp_vertex fmt (v : vertex) =
-  let (var, idx_opt), vdef, vval = V.label v in
+  let {var; idx_opt; def; vval} = V.label v in
   Format.fprintf fmt "@[<v>%s%a = %a@.@.@]@[<hov>%a@]" (Pos.unmark var.name)
     (Format.pp_print_option
        ~none:(fun _ () -> ())
@@ -37,7 +54,7 @@ let pp_vertex fmt (v : vertex) =
          Format.pp_print_list ~pp_sep:Format.pp_print_space
            (fun fmt s -> Format.fprintf fmt "%s" s)
            fmt units))
-    vdef
+    def
 
 type ctx_dbg = vertex StrMap.t
 (* StrMap because we're only keeping track of the last vertex seen with a given name for now *)
@@ -45,5 +62,5 @@ type ctx_dbg = vertex StrMap.t
 let empty_ctxd = StrMap.empty
 
 let var_name_of_vertex v =
-  let ((var, _), _, _) = V.label v in
+  let var = (V.label v).var in
   Pos.unmark var.name

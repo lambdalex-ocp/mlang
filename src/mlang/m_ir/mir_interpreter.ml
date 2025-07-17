@@ -195,7 +195,8 @@ struct
     let dbg = ref G.empty in
     ( Com.Var.Map.fold
         (fun var value ctxd ->
-          let vertex = G.V.create ((var, None), None, value_to_literal value) in
+          let node = G.Node.make var None None @@ value_to_literal value in
+          let vertex = G.V.create node in
           dbg := G.add_vertex !dbg vertex;
           StrMap.add (Pos.unmark var.name) vertex ctxd)
         (Com.Var.Map.map
@@ -571,7 +572,8 @@ struct
                in the current code base, so I chose not to bother for now (my earlier solution is
                also unsatisfactory in this case) *)
             let new_vertex =
-              G.V.create ((v, None), None, value_to_literal resv)
+              let node = G.Node.make v None None @@ value_to_literal resv in
+              G.V.create node
               (* Variables whose definition isn't in the current domains, typically -
                  or a variable of the sort tab[idx] where idx evaluates to undef / out of bounds *)
             in
@@ -617,9 +619,8 @@ struct
         let vertex_list, dbg, ctxd =
           match Com.Var.is_table var with
           | None ->
-              let vertex =
-                G.V.create ((var, None), Some vdef, value_to_literal value)
-              in
+              let node = G.Node.make var None (Some vdef) (value_to_literal value) in
+              let vertex = G.V.create node in
               ( [ vertex ],
                 G.add_vertex dbg vertex,
                 StrMap.add (Pos.unmark var.name) vertex ctxd )
@@ -631,19 +632,15 @@ struct
                 match idx with
                 | 0 -> ([], dbg, ctxd)
                 | n ->
-                    let idx = float_of_int (n - 1) in
-                    let vertex =
-                      G.V.create
-                        ( (var, Some (Com.Float idx)),
-                          Some vdef,
-                          value_to_literal value )
-                    in
+                    let idx = Com.Float (float_of_int (n - 1)) in
+                    let node = G.Node.make var (Some (idx)) (Some vdef) (value_to_literal value) in
+                    let vertex = G.V.create node in
                     let vl, dbg, ctxd = aux (n - 1) dbg ctxd in
                     ( vertex :: vl,
                       G.add_vertex dbg vertex,
                       StrMap.add
                         (Format.asprintf "%s[%a]" (Pos.unmark var.name)
-                           Com.format_literal (Float idx))
+                           Com.format_literal idx)
                         vertex ctxd )
               in
               aux sz dbg ctxd
@@ -684,12 +681,9 @@ struct
                 match Com.Var.is_table var with
                 | None -> assert false
                 | Some _ ->
-                    let vertex =
-                      G.V.create
-                        ( (var, Some (Com.Float (N.to_float f))),
-                          Some vdef,
-                          value_to_literal value )
-                    in
+                    let node = G.Node.make var (Some (Com.Float (N.to_float f)))
+                      (Some vdef) (value_to_literal value) in
+                    let vertex = G.V.create node in
                     ( [ vertex ],
                       G.add_vertex dbg vertex,
                       StrMap.add
