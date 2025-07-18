@@ -67,12 +67,34 @@ let to_json (fmt: Format.formatter) (g : G.t) : unit =
     let is_input = match Com.Var.cat_var_loc var with
     | Some Com.CatVar.LocInput -> true
     | _ -> false in
+    let scope = match var.scope with
+    | Tgv _ -> "tgv"
+    | Temp _ -> "temp"
+    | Ref -> "ref"
+    | Arg -> "arg"
+    | Res -> "res" in
+    let attrs = match Com.Var.attrs var with
+    | exception _ -> ""
+    | attrs ->
+        StrMap.fold (fun s _i acc ->
+          let wrapped = Format.asprintf {|"%s"|} s in
+          wrapped::acc) attrs []
+      |> String.concat ", "
+      |> Format.asprintf "[%s]"
+    in
+    let descr = match Com.Var.descr var with
+    | exception _ -> ""
+    | descr -> Pos.unmark descr in
+    let cat = Com.Var.cat var in
     let pp_string fmt s = fprintf fmt "%s" s in
     let pp_none fmt () = fprintf fmt "input var" in
     let pp_opt = pp_print_option ~none:pp_none pp_string in
+    let given_back = Com.Var.is_given_back var in
     Format.fprintf fmt
-      {|%s@.{"data":{ "name": "%s", "def": "%a", "value": "%a", "input": %b}}|}
-      !delim var_name pp_opt def Com.format_literal vval is_input;
+      {|%s@.{"data":{ "name": "%s", "def": "%a", "value": "%a", "input": %b, "scope": "%s", "attrs": %s,
+    "descr": "%s", "given_back": "%b", "cat": "%a"}}|}
+      !delim var_name pp_opt def Com.format_literal vval is_input scope attrs descr given_back
+      Com.CatVar.pp cat;
     (* Small hack to avoid trailing commas *)
     delim := ","
     in
