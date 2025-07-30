@@ -85,7 +85,9 @@ module type S = sig
     mutable ctx_nb_bloquantes : int;
     mutable ctx_finalized_anos : (Com.Error.t * string option) list;
     mutable ctx_exported_anos : (Com.Error.t * string option) list;
-    mutable ctx_events : (value, Com.Var.t) Com.event_value Array.t Array.t list;
+    mutable ctx_events :
+      (value, Com.Var.t) Com.event_value Array.t Array.t list;
+    mutable ctx_dbg_info : Dbg_info.t option;
   }
   (** Interpretation context *)
 

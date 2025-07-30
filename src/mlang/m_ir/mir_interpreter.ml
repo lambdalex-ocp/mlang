@@ -64,7 +64,9 @@ module type S = sig
     mutable ctx_nb_bloquantes : int;
     mutable ctx_finalized_anos : (Com.Error.t * string option) list;
     mutable ctx_exported_anos : (Com.Error.t * string option) list;
-    mutable ctx_events : (value, Com.Var.t) Com.event_value Array.t Array.t list;
+    mutable ctx_events :
+      (value, Com.Var.t) Com.event_value Array.t Array.t list;
+    mutable ctx_dbg_info : Dbg_info.t option;
   }
 
   val empty_ctx : Mir.program -> ctx
@@ -161,7 +163,9 @@ struct
     mutable ctx_nb_bloquantes : int;
     mutable ctx_finalized_anos : (Com.Error.t * string option) list;
     mutable ctx_exported_anos : (Com.Error.t * string option) list;
-    mutable ctx_events : (value, Com.Var.t) Com.event_value Array.t Array.t list;
+    mutable ctx_events :
+      (value, Com.Var.t) Com.event_value Array.t Array.t list;
+    mutable ctx_dbg_info : Dbg_info.t option;
   }
 
   let empty_ctx (p : Mir.program) : ctx =
@@ -222,6 +226,7 @@ struct
       ctx_finalized_anos = [];
       ctx_exported_anos = [];
       ctx_events = [];
+      ctx_dbg_info = None;
     }
 
   let literal_to_value (l : Com.literal) : value =
@@ -500,7 +505,20 @@ struct
         let v' = ctx.ctx_tab_map.(Com.Var.loc_tab_idx v + 1 + i) in
         set_var_value_org ctx vsd v' vorg value
       done
-    else set_var_value_org ctx vsd v vorg value
+    else set_var_value_org ctx vsd v vorg value;
+    match ctx.ctx_dbg_info with
+    | None -> ()
+    | Some dbg_info ->
+        let def = Some "var definition" in
+        let var = v in
+        let lit = value_to_literal value in
+        let idx_opt = None in
+        let name = Com.Var.name_str var in
+        let info = Dbg_info.Info.make var idx_opt def lit in
+        let vert = Dbg_info.Graph.V.create name in
+        let g = Dbg_info.Graph.add_vertex dbg_info.graph vert in
+        let info = StrMap.add name info dbg_info.info in
+        ctx.ctx_dbg_info <- Some { graph = g; info }
 
   and set_access ctx access vexpr =
     match get_access_var ctx access with
