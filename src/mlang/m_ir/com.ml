@@ -520,6 +520,48 @@ and 'v expression =
 
 and 'v m_expression = 'v expression Pos.marked
 
+(* This code was taken from Noe and adapted to the 2025 var architecture *)
+let get_used_variables (e : 'v expression) : ('v * 'v expression option) list =
+  let rec get_used_variables_ (e : 'v expression)
+      (acc : ('v * 'v expression option) list) =
+    match e with
+    | TestInSet (_, Mark (e, _), _) | Unop (_, Mark (e, _)) ->
+        let acc = get_used_variables_ e acc in
+        acc
+    | Comparison (_, Mark (e1, _), Mark (e2, _))
+    | Binop (_, Mark (e1, _), Mark (e2, _)) ->
+        let acc = get_used_variables_ e1 acc in
+        let acc = get_used_variables_ e2 acc in
+        acc
+    (* FIXME: Index has disappeared, ask David what happened to it *)
+    (* | Index (Mark (var, _), Mark (e, _)) -> *)
+    (*     let acc = (var, Some e) :: acc in *)
+    (*     let acc = get_used_variables_ e acc in *)
+    (*     acc *)
+    | Conditional (Mark (e1, _), Mark (e2, _), e3) -> (
+        let acc = get_used_variables_ e1 acc in
+        let acc = get_used_variables_ e2 acc in
+        match e3 with
+        | None -> acc
+        | Some (Mark (e3, _)) -> get_used_variables_ e3 acc)
+    | FuncCall (_, args) ->
+        List.fold_left
+          (fun acc arg -> get_used_variables_ (Pos.unmark arg) acc)
+          acc args
+    | FuncCallLoop _ | Loop _ -> assert false
+    | Var var
+    | Size (Mark (var, _))
+    | Attribut (Mark (var, _), _)
+    | IsVariable (Mark (var, _), _) -> (
+        match var with
+        | VarAccess (_, v) | TabAccess (_, v, _) -> (v, None) :: acc
+        | FieldAccess (_, Mark (v, _), _, _) -> get_used_variables_ v acc)
+    | Literal _ | NbCategory _ | NbAnomalies | NbDiscordances | NbInformatives
+    | NbBloquantes ->
+        acc
+  in
+  get_used_variables_ e []
+
 module Error = struct
   type typ = Anomaly | Discordance | Information
 
