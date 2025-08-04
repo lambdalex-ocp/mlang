@@ -19,6 +19,7 @@ end
 type t = { graph : Graph.t; info : Info.t StrMap.t }
 
 let empty = { graph = Graph.empty; info = StrMap.empty }
+
 let to_json (fmt : Format.formatter) info : unit =
   let open Format in
   let open Info in
@@ -77,3 +78,9 @@ let to_json (fmt : Format.formatter) info : unit =
   Format.printf "writing edges...@.";
   Graph.iter_edges_e print_edge info.graph;
   Format.fprintf fmt "]}@."
+
+let write_json_file filename info =
+  let filename = filename ^ ".json" in
+  let oc = open_out filename in
+  let fmt = Format.formatter_of_out_channel oc in
+  Format.fprintf fmt "%a@." to_json info

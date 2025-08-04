@@ -183,23 +183,18 @@ let check_test ?(files : string list option) (program : Mir.program)
   let rec check = function
     | [] -> ()
     | inst :: insts ->
+        let dbg_flag = Option.is_some dep_graph_file in
         Cli.debug_print "Executing program %s" inst.label;
         (* Cli.debug_print "Combined Program (w/o verif conds):@.%a@."
            Format_bir.format_program program; *)
-        (* This is where we'll do the work - this exists solely because of a weird rebase *)
-        let varMap, anoSet =
+        let varMap, anoSet, dbg_info =
           Mir_interpreter.evaluate_program program inst.vars inst.events
-            value_sort round_ops
+            value_sort round_ops dbg_flag
         in
-        (match dep_graph_file, dbg_info with
-        | None, None-> ()
-        | Some _dep_graph_file, Some dbg_info ->
-            Dbg_graph.output_dot_eval_program files program inst.vars value_sort
-              round_ops dep_graph_file ();
-            let _files =
-              match files with Some files -> files | None -> assert false
-            in
-            ()
+        (match (dep_graph_file, dbg_info) with
+        | None, None -> ()
+        | Some filename, Some dbg_info ->
+            Dbg_info.write_json_file filename dbg_info
         | _ -> assert false);
 
         let nbErrs =
