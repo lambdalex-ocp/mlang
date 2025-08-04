@@ -91,7 +91,7 @@ module type S = sig
   }
   (** Interpretation context *)
 
-  val empty_ctx : Mir.program -> ctx
+  val empty_ctx : Mir.program -> (* dbg_flag *) bool -> ctx
 
   val literal_to_value : Com.literal -> value
 
@@ -182,7 +182,9 @@ val evaluate_program :
   (Com.literal, Com.Var.t) Com.event_value StrMap.t list ->
   Cli.value_sort ->
   Cli.round_ops ->
-  Com.literal Com.Var.Map.t * Com.Error.Set.t
+  (* dbg_flag *)
+  bool ->
+  Com.literal Com.Var.Map.t * Com.Error.Set.t * Dbg_info.t option
 (** Main interpreter function *)
 
 val evaluate_expr :
@@ -190,5 +192,7 @@ val evaluate_expr :
   Mir.expression Pos.marked ->
   Cli.value_sort ->
   Cli.round_ops ->
+  (* dbg_flag *)
+  bool ->
   Com.literal
 (** Interprets only an expression *)

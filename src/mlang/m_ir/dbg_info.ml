@@ -18,14 +18,15 @@ end
 
 type t = { graph : Graph.t; info : Info.t StrMap.t }
 
-let to_json (fmt : Format.formatter) graph info_map : unit =
+let empty = { graph = Graph.empty; info = StrMap.empty }
+let to_json (fmt : Format.formatter) info : unit =
   let open Format in
   let open Info in
   let delim = ref "" in
   Format.fprintf fmt "{\"graph\":[";
   let pp_vertex v =
     let name = Graph.V.label v in
-    let { var; def; vval; _ } = StrMap.find name info_map in
+    let { var; def; vval; _ } = StrMap.find name info.info in
     let var_name = name in
     let is_input =
       match Com.Var.cat_var_loc var with
@@ -65,7 +66,7 @@ let to_json (fmt : Format.formatter) graph info_map : unit =
     delim := ","
   in
   Format.printf "writing vertices...@.";
-  Graph.iter_vertex pp_vertex graph;
+  Graph.iter_vertex pp_vertex info.graph;
   let print_edge (e : Graph.E.t) =
     let src = Graph.E.src e in
     let dst = Graph.E.dst e in
@@ -74,5 +75,5 @@ let to_json (fmt : Format.formatter) graph info_map : unit =
     Format.fprintf fmt {|,@.{"data": {"source": "%s", "target": "%s"}}|} src dst
   in
   Format.printf "writing edges...@.";
-  Graph.iter_edges_e print_edge graph;
+  Graph.iter_edges_e print_edge info.graph;
   Format.fprintf fmt "]}@."

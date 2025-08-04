@@ -69,7 +69,7 @@ module type S = sig
     mutable ctx_dbg_info : Dbg_info.t option;
   }
 
-  val empty_ctx : Mir.program -> ctx
+  val empty_ctx : Mir.program -> (* dbg_info *) bool -> ctx
 
   val literal_to_value : Com.literal -> value
 
@@ -168,7 +168,7 @@ struct
     mutable ctx_dbg_info : Dbg_info.t option;
   }
 
-  let empty_ctx (p : Mir.program) : ctx =
+  let empty_ctx (p : Mir.program) (dbg_flag : bool) : ctx =
     let dummy_var = Com.Var.new_ref ~name:(Pos.without "") in
     let init_tmp_var _i = { var = dummy_var; value = Undefined } in
     let init_ref _i =
@@ -205,6 +205,9 @@ struct
       in
       Array.init (IntMap.cardinal p.program_var_spaces_idx) init
     in
+    let ctx_dbg_info =
+      match dbg_flag with false -> None | true -> Some Dbg_info.empty
+    in
     {
       ctx_prog = p;
       ctx_target = snd (StrMap.min_binding p.program_targets);
@@ -226,7 +229,7 @@ struct
       ctx_finalized_anos = [];
       ctx_exported_anos = [];
       ctx_events = [];
-      ctx_dbg_info = None;
+      ctx_dbg_info;
     }
 
   let literal_to_value (l : Com.literal) : value =
@@ -1317,10 +1320,10 @@ let prepare_interp (sort : Cli.value_sort) (roundops : Cli.round_ops) : unit =
 let evaluate_program (p : Mir.program) (inputs : Com.literal Com.Var.Map.t)
     (events : (Com.literal, Com.Var.t) Com.event_value StrMap.t list)
     (sort : Cli.value_sort) (roundops : Cli.round_ops) (dbg_flag : bool) :
-    Com.literal Com.Var.Map.t * Com.Error.Set.t =
+    Com.literal Com.Var.Map.t * Com.Error.Set.t * Dbg_info.t option =
   prepare_interp sort roundops;
   let module Interp = (val get_interp sort roundops : S) in
-  let ctx = Interp.empty_ctx p in
+  let ctx = Interp.empty_ctx p dbg_flag in
   Interp.update_ctx_with_inputs ctx inputs;
   Interp.update_ctx_with_events ctx events;
   Interp.evaluate_program ctx;
@@ -1348,9 +1351,11 @@ let evaluate_program (p : Mir.program) (inputs : Com.literal Com.Var.Map.t)
     let fold res (e, _) = Com.Error.Set.add e res in
     List.fold_left fold Com.Error.Set.empty ctx.ctx_exported_anos
   in
-  (varMap, anoSet)
+  let dbg_info = ctx.ctx_dbg_info in
+  (varMap, anoSet, dbg_info)
 
 let evaluate_expr (p : Mir.program) (e : Mir.expression Pos.marked)
-    (sort : Cli.value_sort) (roundops : Cli.round_ops) : Com.literal =
+    (sort : Cli.value_sort) (roundops : Cli.round_ops) (dbg_flag : bool) :
+    Com.literal =
   let module Interp = (val get_interp sort roundops : S) in
-  Interp.value_to_literal (Interp.evaluate_expr (Interp.empty_ctx p) e)
+  Interp.value_to_literal (Interp.evaluate_expr (Interp.empty_ctx p dbg_flag) e)
