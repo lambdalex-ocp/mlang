@@ -508,25 +508,34 @@ struct
         let v' = ctx.ctx_tab_map.(Com.Var.loc_tab_idx v + 1 + i) in
         set_var_value_org ctx vsd v' vorg value
       done
-    else set_var_value_org ctx vsd v vorg value;
-    match ctx.ctx_dbg_info with
-    | None -> ()
-    | Some dbg_info ->
-        let def = Some "var definition" in
-        let var = v in
-        let lit = value_to_literal value in
-        let idx_opt = None in
-        let name = Com.Var.name_str var in
-        let info = Dbg_info.Info.make var idx_opt def lit in
-        let vert = Dbg_info.Graph.V.create name in
-        let g = Dbg_info.Graph.add_vertex dbg_info.graph vert in
-        let info = StrMap.add name info dbg_info.info in
-        ctx.ctx_dbg_info <- Some { graph = g; info }
+    else set_var_value_org ctx vsd v vorg value
 
   and set_access ctx access vexpr =
     match get_access_var ctx access with
-    | Some (vsd, v) -> set_var_value ctx vsd v @@ evaluate_expr ctx vexpr
     | None -> ()
+    | Some (vsd, v) -> (
+        let value = evaluate_expr ctx vexpr in
+        set_var_value ctx vsd v value;
+        match ctx.ctx_dbg_info with
+        | None -> ()
+        | Some dbg_info ->
+            let name = Com.Var.name_str v in
+            let lit = value_to_literal value in
+            let def = None in
+            let info = Dbg_info.Info.make v def lit in
+            let info = StrMap.add name info dbg_info.info in
+            let vert = Dbg_info.Graph.V.create name in
+            let graph = Dbg_info.Graph.add_vertex dbg_info.graph vert in
+            let deps = Com.get_used_variables @@ Pos.unmark vexpr in
+            let dep_names =
+              List.map (fun (var, _) -> Com.Var.name_str var) deps
+            in
+            let add_edge graph depname =
+              let dep_vert = Dbg_info.Graph.V.create depname in
+              Dbg_info.Graph.add_edge graph vert dep_vert
+            in
+            let graph = List.fold_left add_edge graph dep_names in
+            ctx.ctx_dbg_info <- Some { graph; info })
 
   and evaluate_expr (ctx : ctx) (e : Mir.expression Pos.marked) : value =
     let comparison op new_e1 new_e2 =
