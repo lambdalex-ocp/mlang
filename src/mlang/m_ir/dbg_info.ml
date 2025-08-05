@@ -1,13 +1,8 @@
 module Info = struct
-  type t = {
-    var : Com.Var.t;
-    idx_opt : Com.literal option;
-    def : string option;
-    vval : Com.literal;
-  }
-  (* The literal option is an optional index in the table. It should be set to Some _ only if the Com.Var.t is a table *)
+  type t = { var : Com.Var.t; def : string option; vval : Com.literal }
+  (* We've removed idx_opt, it may be needed for tables. *)
 
-  let make var idx_opt def vval = { var; idx_opt; def; vval }
+  let make var def vval = { var; def; vval }
 end
 
 module Graph = struct
