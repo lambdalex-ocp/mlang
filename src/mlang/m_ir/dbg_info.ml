@@ -19,45 +19,51 @@ let to_json (fmt : Format.formatter) info : unit =
   let open Format in
   let open Info in
   let delim = ref "" in
+  let print_info var_name {var; def; vval; _} =
+    let scope = match var.scope with
+    | Tgv _ -> "tgv"
+    | Temp _ -> "temp"
+    | Ref -> "ref" in
+    let tgv_details = match var.scope with
+    | Temp _ | Ref -> ""
+    | Tgv _ ->
+        let is_input =
+          match Com.Var.cat_var_loc var with
+          | Com.CatVar.LocInput -> true
+          | _ -> false in
+        let cat = Com.Var.cat var in
+        let attrs =
+          let wrap s _ acc =
+            let wrapped = Format.asprintf {|"%s"|} s in
+            wrapped :: acc in
+          StrMap.fold wrap (Com.Var.attrs var) []
+          |> String.concat ", " |> Format.asprintf "[%s]"
+        in
+        let given_back = Com.Var.is_given_back var in
+        let descr = Pos.unmark @@ Com.Var.descr var
+          |> Re.Str.global_replace (Re.Str.regexp "	") "  " in
+        let str =
+          Format.asprintf {|, "tgv_details": {
+      "cat": "%a", "is_input": %b, "given_back": %b, "attrs": %s, "descr": "%s"
+    }|}
+          Com.CatVar.pp cat is_input given_back attrs descr in 
+        str
+    in
+    let pp_string fmt s = fprintf fmt "%s" s in
+    let pp_none fmt () = fprintf fmt "" in
+    let pp_opt = pp_print_option ~none:pp_none pp_string in
+    Format.asprintf
+      {|{ "name": "%s", "def": "%a", "value": "%a", "scope": "%s" %s}|}
+      var_name pp_opt def Com.format_literal vval scope tgv_details in
   Format.fprintf fmt "{\"graph\":[";
   let pp_vertex v =
-    let name = Graph.V.label v in
-    let { var; def; vval; _ } = StrMap.find name info.info in
-    let var_name = name in
-    let is_input =
-      match Com.Var.cat_var_loc var with
-      | Com.CatVar.LocInput -> true
-      | _ -> false
-    in
-    let scope =
-      match var.scope with Tgv _ -> "tgv" | Temp _ -> "temp" | Ref -> "ref"
-    in
-    let attrs =
-      match Com.Var.attrs var with
-      | exception _ -> ""
-      | attrs ->
-          StrMap.fold
-            (fun s _i acc ->
-              let wrapped = Format.asprintf {|"%s"|} s in
-              wrapped :: acc)
-            attrs []
-          |> String.concat ", " |> Format.asprintf "[%s]"
-    in
-    let descr =
-      match Com.Var.descr var with
-      | exception _ -> ""
-      | descr -> Pos.unmark descr
-    in
-    let cat = Com.Var.cat var in
-    let pp_string fmt s = fprintf fmt "%s" s in
-    let pp_none fmt () = fprintf fmt "input var" in
-    let pp_opt = pp_print_option ~none:pp_none pp_string in
-    let given_back = Com.Var.is_given_back var in
+        let var_name = Graph.V.label v in
+    let dbg_info = StrMap.find_opt var_name info.info in
+    let obj = match dbg_info with
+    | None -> Format.asprintf {|{"name": "%s"}|} var_name
+    | Some info -> print_info var_name info in
     Format.fprintf fmt
-      {|%s@.{"data":{ "name": "%s", "def": "%a", "value": "%a", "input": %b, "scope": "%s", "attrs": %s,
-    "descr": "%s", "given_back": "%b", "cat": "%a"}}|}
-      !delim var_name pp_opt def Com.format_literal vval is_input scope attrs
-      descr given_back Com.CatVar.pp cat;
+      {|%s@.{"data": %s}|} !delim obj;
     (* Small hack to avoid trailing commas *)
     delim := ","
   in
