@@ -525,7 +525,8 @@ struct
             let info = Dbg_info.Info.make v def lit in
             let info = StrMap.add name info dbg_info.info in
             let vert = Dbg_info.Graph.V.create name in
-            let graph = Dbg_info.Graph.add_vertex dbg_info.graph vert in
+            let graph = dbg_info.graph in
+            (* let graph = Dbg_info.Graph.add_vertex dbg_info.graph vert in *)
             let deps = Com.get_used_variables @@ Pos.unmark vexpr in
             let dep_names =
               List.map (fun (var, _) -> Com.Var.name_str var) deps
