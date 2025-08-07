@@ -191,9 +191,17 @@ let check_test ?(files : string list option) (program : Mir.program)
           Mir_interpreter.evaluate_program program inst.vars inst.events
             value_sort round_ops dbg_flag
         in
+        Com.Var.Map.pp Com.format_literal Format.std_formatter inst.vars;
         (match (dep_graph_file, dbg_info) with
         | None, None -> ()
         | Some filename, Some dbg_info ->
+            (* Add the input variables value *)
+            let add_to_map var lit map =
+              let name = Com.Var.name_str var in
+              StrMap.add name Dbg_info.Info.{ var; def = None; vval = lit } map
+            in
+            let info = Com.Var.Map.fold add_to_map inst.vars dbg_info.info in
+            let dbg_info = { dbg_info with info } in
             Dbg_info.write_json_file filename dbg_info
         | _ -> assert false);
 
