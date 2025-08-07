@@ -206,7 +206,19 @@ struct
       Array.init (IntMap.cardinal p.program_var_spaces_idx) init
     in
     let ctx_dbg_info =
-      match dbg_flag with false -> None | true -> Some Dbg_info.empty
+      match dbg_flag with
+      | false -> None
+      | true ->
+          let dbg_info = Dbg_info.empty in
+          let add_to_map str var map =
+            let t =
+              Dbg_info.Info.
+                { var; def = Some "input variable"; vval = Undefined }
+            in
+            StrMap.add str t map
+          in
+          let info = StrMap.fold add_to_map p.program_vars dbg_info.info in
+          Some { dbg_info with info }
     in
     {
       ctx_prog = p;
