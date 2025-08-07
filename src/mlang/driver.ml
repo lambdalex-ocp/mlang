@@ -131,10 +131,11 @@ let parse () =
       current_progress source_file;
       parse_file source_file
     in
+    (*FIXME: use a fold here *)
     let prog =
       List.map parse_file_progress @@ Cli.get_files !Cli.source_files
     in
-    prog @ m_program
+    List.rev prog @ m_program
   in
 
   let m_program =
