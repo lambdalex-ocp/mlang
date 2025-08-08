@@ -67,6 +67,7 @@ module type S = sig
     mutable ctx_events :
       (value, Com.Var.t) Com.event_value Array.t Array.t list;
     mutable ctx_dbg_info : Dbg_info.t option;
+    mutable ctx_current_rule : int option;
   }
 
   val empty_ctx : Mir.program -> (* dbg_info *) bool -> ctx
@@ -166,6 +167,7 @@ struct
     mutable ctx_events :
       (value, Com.Var.t) Com.event_value Array.t Array.t list;
     mutable ctx_dbg_info : Dbg_info.t option;
+    mutable ctx_current_rule : int option;
   }
 
   let empty_ctx (p : Mir.program) (dbg_flag : bool) : ctx =
@@ -213,7 +215,12 @@ struct
           let add_to_map str var map =
             let t =
               Dbg_info.Info.
-                { var; def = Some "input variable"; vval = Undefined }
+                {
+                  var;
+                  def = Some "input variable";
+                  vval = Undefined;
+                  rule_id = None;
+                }
             in
             StrMap.add str t map
           in
@@ -242,6 +249,7 @@ struct
       ctx_exported_anos = [];
       ctx_events = [];
       ctx_dbg_info;
+      ctx_current_rule = None;
     }
 
   let literal_to_value (l : Com.literal) : value =
@@ -534,11 +542,11 @@ struct
             let name = Com.Var.name_str v in
             let lit = value_to_literal value in
             let def = None in
-            let info = Dbg_info.Info.make v def lit in
+            let rule_id = ctx.ctx_current_rule in
+            let info = Dbg_info.Info.make v def lit rule_id in
             let info = StrMap.add name info dbg_info.info in
             let vert = Dbg_info.Graph.V.create name in
             let graph = dbg_info.graph in
-            (* let graph = Dbg_info.Graph.add_vertex dbg_info.graph vert in *)
             let deps = Com.get_used_variables @@ Pos.unmark vexpr in
             let dep_names =
               List.map (fun (var, _) -> Com.Var.name_str var) deps
@@ -1193,6 +1201,19 @@ struct
 
   and evaluate_target (canBlock : bool) (ctx : ctx) (target : Mir.target)
       (args : Mir.m_access list) : unit =
+    (* We check if the current target is in the rule map.
+       If it is, we assume we're in a rule, and register it
+       to annotate the value we'll set later in the dbg_info. *)
+    let target_name = Pos.unmark target.target_name in
+    let rule_id =
+      IntMap.fold
+        (fun i str acc ->
+          match acc with
+          | Some _ -> acc
+          | None -> if str = target_name then Some i else None)
+        ctx.ctx_prog.program_rules None
+    in
+    ctx.ctx_current_rule <- rule_id;
     let rec set_args n vl al =
       match (vl, al) with
       | v :: vl', m_a :: al' -> (

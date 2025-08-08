@@ -1,8 +1,13 @@
 module Info = struct
-  type t = { var : Com.Var.t; def : string option; vval : Com.literal }
+  type t = {
+    var : Com.Var.t;
+    def : string option;
+    vval : Com.literal;
+    rule_id : int option;
+  }
   (* We've removed idx_opt, it may be needed for tables. *)
 
-  let make var def vval = { var; def; vval }
+  let make var def vval rule_id = { var; def; vval; rule_id }
 end
 
 module Graph = Graph.Persistent.Digraph.Concrete (struct
@@ -39,7 +44,7 @@ let to_json (fmt : Format.formatter) info : unit =
   in
   Format.printf "writing edges...@.";
   Graph.iter_edges_e print_edge info.graph;
-  let print_info var_name { var; def; vval; _ } =
+  let print_info var_name { var; def; vval; rule_id; _ } =
     let scope =
       match var.scope with Tgv _ -> "tgv" | Temp _ -> "temp" | Ref -> "ref"
     in
@@ -78,9 +83,14 @@ let to_json (fmt : Format.formatter) info : unit =
     let pp_string fmt s = fprintf fmt "%s" s in
     let pp_none fmt () = fprintf fmt "" in
     let pp_opt = pp_print_option ~none:pp_none pp_string in
+    let rule_id =
+      match rule_id with
+      | Some i -> Format.asprintf {|, "rule_id": %d|} i
+      | None -> ""
+    in
     Format.fprintf fmt
-      {|%s"%s": {"def": "%a", "value": "%a", "scope": "%s" %s}|} !delim var_name
-      pp_opt def Com.format_literal vval scope tgv_details;
+      {|%s"%s": {"def": "%a", "value": "%a", "scope": "%s" %s %s}|} !delim
+      var_name pp_opt def Com.format_literal vval scope rule_id tgv_details;
     delim := ","
   in
   Format.fprintf fmt "],@.";

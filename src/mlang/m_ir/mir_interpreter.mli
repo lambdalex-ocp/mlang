@@ -88,6 +88,7 @@ module type S = sig
     mutable ctx_events :
       (value, Com.Var.t) Com.event_value Array.t Array.t list;
     mutable ctx_dbg_info : Dbg_info.t option;
+    mutable ctx_current_rule : int option;
   }
   (** Interpretation context *)
 
