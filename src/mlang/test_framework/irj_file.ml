@@ -83,7 +83,7 @@ let fail text buffer (checkpoint : _ Irj_parser.MenhirInterpreter.checkpoint) =
   in
   (* Show these three components. *)
   Errors.raise_spanned_error indication
-    (mk_position (MenhirLib.ErrorReports.last buffer))
+    (mk_position (mk_position_nofst (MenhirLib.ErrorReports.last buffer)))
 
 let parse_file (test_name : string) : Irj_ast.irj_file =
   let text, filebuf =

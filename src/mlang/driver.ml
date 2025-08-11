@@ -100,8 +100,15 @@ let parse () =
     match Mparser.source_file token filebuf with
     | commands -> commands
     | exception Mparser.Error ->
+        let sofst = filebuf.lex_start_pos in
+        let eofst = filebuf.lex_curr_pos in
+        let loc =
+          Parse_utils.make_loc
+            (filebuf.lex_start_p, filebuf.lex_curr_p)
+            sofst eofst
+        in
         Errors.raise_spanned_error "M syntax error"
-          (Parse_utils.mk_position (filebuf.lex_start_p, filebuf.lex_curr_p))
+          (Parse_utils.mk_position loc)
   in
 
   let parse_file source_file =

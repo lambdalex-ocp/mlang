@@ -20,7 +20,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
   open Mparser
 
   let mk_lexbuf_pos lexbuf =
-    Parse_utils.mk_position (lexeme_start_p lexbuf, lexeme_end_p lexbuf)
+    let sofst = lexeme_start lexbuf in
+    let eofst = lexeme_end lexbuf in
+    let loc = Parse_utils.make_loc (lexeme_start_p lexbuf, lexeme_end_p lexbuf) sofst eofst in
+    Parse_utils.mk_position loc
 }
 
 rule token = parse

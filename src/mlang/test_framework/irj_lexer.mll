@@ -20,9 +20,13 @@ open Irj_parser
 open Irj_ast
 
 let error lb msg =
+  let sofst = Lexing.lexeme_start lb in
+  let eofst = Lexing.lexeme_end lb in
+  let sloc = (Lexing.lexeme_start_p lb, Lexing.lexeme_end_p lb) in
+  let loc = make_loc sloc sofst eofst in
   Errors.raise_spanned_error
     ("Lexing error : " ^ msg)
-    (mk_position (Lexing.lexeme_start_p lb, Lexing.lexeme_end_p lb))
+    (mk_position loc)
 
 module StrMap = Map.Make (String)
 

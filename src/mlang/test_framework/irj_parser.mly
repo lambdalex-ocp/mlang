@@ -57,20 +57,21 @@ irj_file:
   prim = primitif
   rapp = rappels
   endmark {
+  let loc = make_loc $loc(nom) $startofs(nom) $endofs(nom) in
     let nom =
       match nom with
       | [n] -> if String.length n > 80 then
-               error $loc(nom) "Name too big for autotest"
+               error loc "Name too big for autotest"
                else n
-      | [] -> error $loc(nom) "Missing name in section #NOM"
-      | _ -> error $loc(nom) "Extra line(s) in section #NOM"
+      | [] -> error loc "Missing name in section #NOM"
+      | _ -> error loc "Extra line(s) in section #NOM"
     in
     { nom; prim; rapp } }
-| EOF { error $loc "Empty test file" }
+| EOF { error (make_loc $loc $startofs $endofs) "Empty test file" }
 
 endmark:
 | ENDSHARP NL EOF { () }
-| EOF { error $loc "Unexpected end on file, missing ##"}
+| EOF { error (make_loc $loc $startofs $endofs) "Unexpected end on file, missing ##"}
 
 /* We need both here to ensure that all strings will be properly matched */
 name:
@@ -108,10 +109,13 @@ rappels:
   { ignore (entrees_rappels, controles_attendus, resultats_attendus) ; None }
 
 variable_and_value:
-| var = SYMBOL SLASH value = value NL { (Pos.mark var (mk_position $loc(var)), Pos.mark value (mk_position $loc(value))) }
+| var = SYMBOL SLASH value = value NL { 
+    let var_loc = make_loc $loc(var) $startofs(var) $endofs(var) in
+    let val_loc = make_loc $loc(value) $startofs(value) $endofs(value) in
+  (Pos.mark var (mk_position var_loc), Pos.mark value (mk_position val_loc)) }
 
 calc_error:
-| error = SYMBOL NL { Pos.mark error (mk_position $sloc) }
+| error = SYMBOL NL { Pos.mark error (mk_position (make_loc $sloc $symbolstartofs $endofs)) }
 
 rappel:
 | event_nb = integer SLASH
@@ -125,16 +129,20 @@ rappel:
   decl_2042_rect = INTEGER? NL
   {
     if String.length variable_code = 0 then
-        error $loc(variable_code) "Invalid value for 'variable_code' (must be non-empty)";
+      (let loc = make_loc $loc(variable_code) $startofs(variable_code) $endofs(variable_code) in
+      error loc "Invalid value for 'variable_code' (must be non-empty)");
     if direction <> "R" && direction <> "C" && direction <> "M" && direction <> "P" then
-      error $loc(direction) ("Unknown value for 'direction' (type of the 'rappel', should be R, C, M or P) : " ^ direction);
+      (let loc = make_loc $loc(direction) $startofs(direction) $endofs(direction) in
+      error loc ("Unknown value for 'direction' (type of the 'rappel', should be R, C, M or P) : " ^ direction));
     (match penalty_code with
     | Some p when p < 0 || 99 < p ->
-        error $loc(penalty_code) ("Invalid value for 'penalty_code' (out of range 0-99) : " ^ (string_of_int p));
+      (let loc = make_loc $loc(penalty_code) $startofs(penalty_code) $endofs(penalty_code) in
+      error loc ("Invalid value for 'penalty_code' (out of range 0-99) : " ^ (string_of_int p)));
     | _ -> ());
     (match decl_2042_rect with
     | Some p when p < 0 || 1 < p ->
-        error $loc(decl_2042_rect) ("Invalid value for 'decl_2042_rect' (out of range 0-1) : " ^ (string_of_int p));
+        (let loc = make_loc $loc(decl_2042_rect) $startofs(decl_2042_rect) $endofs(decl_2042_rect) in
+        error loc ("Invalid value for 'decl_2042_rect' (out of range 0-1) : " ^ (string_of_int p)));
     | _ -> ());
     {event_nb;
      rappel_nb;
@@ -145,7 +153,7 @@ rappel:
      base_tolerance_legale;
      month_year;
      decl_2042_rect;
-     pos = mk_position $sloc }
+     pos = mk_position (make_loc $sloc $symbolstartofs $endofs)}
   }
 
 integer:

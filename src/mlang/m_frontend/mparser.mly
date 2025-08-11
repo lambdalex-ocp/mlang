@@ -76,7 +76,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 %%
 
 %inline with_pos(X):
-| x = X { Pos.mark x (mk_position $sloc) }
+| x = X { Pos.mark x (mk_position (make_loc $sloc $symbolstartofs $endofs)) }
 
 symbol_with_pos:
 | s = with_pos(SYMBOL) { s }
@@ -85,7 +85,7 @@ symbol_list_with_pos:
 | sl = with_pos(symbol_with_pos+) { sl }
 
 variable_name:
-| s = SYMBOL { parse_variable_name $sloc s }
+| s = SYMBOL { parse_variable_name (make_loc $sloc $symbolstartofs $endofs) s }
 
 source_file:
 | vl = with_pos(symbol_colon_etc)* is = source_file_rev EOF {
@@ -169,7 +169,7 @@ rule_domain_decl:
     let dno, dso, dco, dpdo = List.fold_left fold init rdom_params in
     let dom_names =
       match dno with
-      | None -> err "rule domain names must be defined" (mk_position $sloc)
+      | None -> err "rule domain names must be defined" (mk_position (make_loc $sloc $symbolstartofs $endofs))
       | Some dn -> dn
     in
     let decl = {
@@ -220,7 +220,7 @@ verif_domain_decl:
     let dno, dso, dvo, dpdo, dco = List.fold_left fold init vdom_params in
     let dom_names =
       match dno with
-      | None -> err "rule domain names must be defined" (mk_position $sloc)
+      | None -> err "rule domain names must be defined" (mk_position (make_loc $sloc $symbolstartofs $endofs))
       | Some dn -> dn
     in
     let dom_data = {
@@ -282,17 +282,17 @@ variable_decl:
 | v = with_pos(input_variable) { VariableDecl (InputVar v) }
 
 const_variable_name:
-| name = SYMBOL COLON CONST { parse_variable_name $sloc name }
+| name = SYMBOL COLON CONST { parse_variable_name (make_loc $sloc $symbolstartofs $endofs) name }
 
 const_value:
-| value = SYMBOL { parse_atom $sloc value }
+| value = SYMBOL { parse_atom (make_loc $sloc $symbolstartofs $endofs) value }
 
 const_variable:
 | name = with_pos(const_variable_name) EQUALS value = with_pos(const_value)
   SEMICOLON { (name, value) }
 
 comp_variable_name:
-| name = SYMBOL COLON { parse_variable_name $sloc name }
+| name = SYMBOL COLON { parse_variable_name (make_loc $sloc $symbolstartofs $endofs) name }
 
 comp_variable_table:
 | TABLE LBRACKET size = SYMBOL RBRACKET { parse_table_size size }
@@ -339,7 +339,7 @@ comp_variable:
   }
 
 input_variable_name:
-| name = SYMBOL COLON { parse_variable_name $sloc name }
+| name = SYMBOL COLON { parse_variable_name (make_loc $sloc $symbolstartofs $endofs) name }
 
 input_descr:
 descr = STRING { parse_string descr }
@@ -350,10 +350,10 @@ input_attr_or_category:
 | GIVEN_BACK { None, None, true }
 
 input_variable_alias:
-| ALIAS alias = SYMBOL { parse_variable_name $sloc alias }
+| ALIAS alias = SYMBOL { parse_variable_name (make_loc $sloc $symbolstartofs $endofs) alias }
 
 variable_attribute_value:
-| value = SYMBOL { parse_int $sloc value }
+| value = SYMBOL { parse_int (make_loc $sloc $symbolstartofs $endofs) value }
 
 variable_attribute:
 | attr = symbol_with_pos EQUALS
@@ -666,12 +666,12 @@ function_header_elt:
 temporary_variable_name:
 | name = symbol_with_pos size = with_pos(comp_variable_table)? {
     let name_str, name_pos = Pos.to_couple name in
-    (Pos.mark (parse_variable_name $sloc name_str) name_pos), size
+    (Pos.mark (parse_variable_name (make_loc $sloc $symbolstartofs $endofs) name_str) name_pos), size
   }
 
 compute_space:
 | COLON SPACE sp = symbol_with_pos {
-    Pos.same (parse_variable $sloc (Pos.unmark sp)) sp
+    Pos.same (parse_variable (make_loc $sloc $symbolstartofs $endofs) (Pos.unmark sp)) sp
   }
 
 instruction_list_etc:
@@ -706,14 +706,14 @@ instruction:
 | IF e = with_pos(expression)
   THEN ilt = instruction_list_rev
   ilel = instruction_else_branch {
-    let ilite = (Some e, List.rev ilt, mk_position $sloc) :: ilel in
+    let ilite = (Some e, List.rev ilt, mk_position (make_loc $sloc $symbolstartofs $endofs)) :: ilel in
     Some (parse_if_then_etc ilite)
   }
 | WHEN e = with_pos(expression)
   DO ild = instruction_list_rev
   iltwe = instruction_then_when_branch {
     let iltwl, ed = iltwe in
-    Some (parse_when_do_etc ((e, List.rev ild, mk_position $sloc) :: iltwl, ed))
+    Some (parse_when_do_etc ((e, List.rev ild, mk_position (make_loc $sloc $symbolstartofs $endofs)) :: iltwl, ed))
   }
 | COMPUTE DOMAIN dom = symbol_list_with_pos sp_opt = compute_space? SEMICOLON {
     match sp_opt with
@@ -869,7 +869,7 @@ instruction:
       match sort, filter, add with
       | None, None, None ->
           let msg = "event organizer needs a sort, a filter or a creation specification" in
-          Errors.raise_spanned_error msg (mk_position $sloc)
+          Errors.raise_spanned_error msg (mk_position (make_loc $sloc $symbolstartofs $endofs))
       | _, _, _ -> sort, filter, add
     in
     Some (ArrangeEvents (sort, filter, add, List.rev instrs))
@@ -883,7 +883,7 @@ instruction:
 
 target_param:
 | COLON SPACE sp = symbol_with_pos {
-    let m_sp = Pos.same (parse_variable $sloc (Pos.unmark sp)) sp in
+    let m_sp = Pos.same (parse_variable (make_loc $sloc $symbolstartofs $endofs) (Pos.unmark sp)) sp in
     Some m_sp, None
   }
 | COLON WITH args = separated_nonempty_list(COMMA, with_pos(var_access)) {
@@ -892,7 +892,7 @@ target_param:
 
 verify_param:
 | COLON SPACE sp = symbol_with_pos {
-    let m_sp = Pos.same (parse_variable $sloc (Pos.unmark sp)) sp in
+    let m_sp = Pos.same (parse_variable (make_loc $sloc $symbolstartofs $endofs) (Pos.unmark sp)) sp in
     Some m_sp, None
   }
 | COLON WITH expr = with_pos(expression) {
@@ -903,10 +903,10 @@ instruction_else_branch:
 | ELSEIF e = with_pos(expression)
   THEN ilt = instruction_list_rev
   ilel = instruction_else_branch {
-    (Some e, List.rev ilt, mk_position $sloc) :: ilel
+    (Some e, List.rev ilt, mk_position (make_loc $sloc $symbolstartofs $endofs)) :: ilel
   }
 | ELSE il = instruction_list_rev ENDIF {
-    [None, List.rev il, mk_position $sloc]
+    [None, List.rev il, mk_position (make_loc $sloc $symbolstartofs $endofs)]
   }
 | ENDIF { [] }
 
@@ -915,10 +915,10 @@ instruction_then_when_branch:
   DO ild = instruction_list_rev
   iltwe = instruction_then_when_branch {
     let iltwl, ed = iltwe in
-    ((e, List.rev ild, mk_position $sloc) :: iltwl, ed)
+    ((e, List.rev ild, mk_position (make_loc $sloc $symbolstartofs $endofs)) :: iltwl, ed)
   }
 | ELSE_DO il = instruction_list_rev ENDWHEN {
-    ([], (Pos.mark (List.rev il) (mk_position $sloc)))
+    ([], (Pos.mark (List.rev il) (mk_position (make_loc $sloc $symbolstartofs $endofs))))
   }
 | ENDWHEN { ([], (Pos.without [])) }
 
@@ -1020,7 +1020,7 @@ it_param:
 it_param_category:
 | WITH expr = with_pos(expression) COLON { `Expr expr }
 | SPACE sp = symbol_with_pos COLON {
-    let sp_name = Pos.same (parse_variable $sloc (Pos.unmark sp)) sp in
+    let sp_name = Pos.same (parse_variable (make_loc $sloc $symbolstartofs $endofs) (Pos.unmark sp)) sp in
     `Space sp_name
   }
 
@@ -1085,7 +1085,7 @@ rest_param_category:
   }
 | WITH expr = with_pos(expression) COLON { `Expr expr }
 | SPACE sp = symbol_with_pos COLON {
-    let sp_name = Pos.same (parse_variable $sloc (Pos.unmark sp)) sp in
+    let sp_name = Pos.same (parse_variable (make_loc $sloc $symbolstartofs $endofs) (Pos.unmark sp)) sp in
     `Space sp_name
   }
 
@@ -1113,21 +1113,21 @@ for_formula:
 
 var_access:
 | sp = symbol_with_pos DOT v = symbol_with_pos m_i_opt = with_pos(brackets)? {
-    let m_sp = Pos.same (parse_variable $sloc (Pos.unmark sp)) sp in
-    let m_v = Pos.same (parse_variable $sloc (Pos.unmark v)) v in
+    let m_sp = Pos.same (parse_variable (make_loc $sloc $symbolstartofs $endofs) (Pos.unmark sp)) sp in
+    let m_v = Pos.same (parse_variable (make_loc $sloc $symbolstartofs $endofs) (Pos.unmark v)) v in
     match m_i_opt with
     | None -> Com.VarAccess (Some (m_sp, -1), m_v)
     | Some m_i -> Com.TabAccess (Some (m_sp, -1), m_v, m_i)
   }
 | v = symbol_with_pos m_i_opt = with_pos(brackets)? {
-    let m_v = Pos.same (parse_variable $sloc (Pos.unmark v)) v in
+    let m_v = Pos.same (parse_variable (make_loc $sloc $symbolstartofs $endofs) (Pos.unmark v)) v in
     match m_i_opt with
     | None -> Com.VarAccess (None, m_v)
     | Some m_i -> Com.TabAccess (None, m_v, m_i)
   }
 | sp = symbol_with_pos DOT EVENT_FIELD LPAREN idx = with_pos(expression)
   COMMA f = symbol_with_pos RPAREN {
-    let m_sp = Pos.same (parse_variable $sloc (Pos.unmark sp)) sp in
+    let m_sp = Pos.same (parse_variable (make_loc $sloc $symbolstartofs $endofs) (Pos.unmark sp)) sp in
     Com.FieldAccess (Some (m_sp, -1), idx, f, -1)
   }
 | EVENT_FIELD LPAREN idx = with_pos(expression)
@@ -1141,7 +1141,7 @@ formula:
   }
 | EVENT_FIELD LPAREN idx = with_pos(expression)
   COMMA f = symbol_with_pos RPAREN REFERENCE v = symbol_with_pos {
-    let var = Pos.same (parse_variable $sloc (Pos.unmark v)) v in
+    let var = Pos.same (parse_variable (make_loc $sloc $symbolstartofs $endofs) (Pos.unmark v)) v in
     EventFieldRef (idx, f, -1, var)
   }
 
@@ -1263,7 +1263,7 @@ loop_variables_values:
 | lvs = separated_nonempty_list(SEMICOLON, loop_variables_value) { lvs }
 
 loop_variable_value_name:
-| s = SYMBOL { parse_parameter $sloc s }
+| s = SYMBOL { parse_parameter (make_loc $sloc $symbolstartofs $endofs) s }
 
 loop_variables_value:
 | s = with_pos(loop_variable_value_name) EQUALS e = enumeration_loop { s, e }
@@ -1282,8 +1282,8 @@ enumeration_loop:
 enumeration_loop_item:
 | bounds = interval_loop { bounds  }
 | s = SYMBOL {
-    let pos = mk_position $sloc in
-    Com.Single (Pos.mark (parse_to_atom (parse_variable_or_int $sloc s) pos) pos)
+    let pos = mk_position (make_loc $sloc $symbolstartofs $endofs) in
+    Com.Single (Pos.mark (parse_to_atom (parse_variable_or_int (make_loc $sloc $symbolstartofs $endofs) s) pos) pos)
   }
 
 range_or_minus:
@@ -1292,9 +1292,9 @@ range_or_minus:
 
 interval_loop:
 | i1 = SYMBOL rm = range_or_minus i2 = SYMBOL {
-    let pos = mk_position $sloc in
-    let l1 = Pos.mark (parse_to_atom (parse_variable_or_int $sloc i1) pos) pos in
-    let l2 = Pos.mark (parse_to_atom (parse_variable_or_int $sloc i2) pos) pos in
+    let pos = mk_position (make_loc $sloc $symbolstartofs $endofs) in
+    let l1 = Pos.mark (parse_to_atom (parse_variable_or_int (make_loc $sloc $symbolstartofs $endofs) i1) pos) pos in
+    let l2 = Pos.mark (parse_to_atom (parse_variable_or_int (make_loc $sloc $symbolstartofs $endofs) i2) pos) pos in
     match rm with
     | `Range -> Com.Range (l1, l2)
     | `Minus -> Com.Interval (l1, l2)
@@ -1308,35 +1308,35 @@ enumeration_item:
 | bounds = interval { bounds }
 | sp = symbol_with_pos DOT EVENT_FIELD LPAREN idx = with_pos(expression)
   COMMA field = symbol_with_pos RPAREN {
-    let m_sp = Pos.same (parse_variable $sloc (Pos.unmark sp)) sp in
-    let pos = mk_position $sloc in
+    let m_sp = Pos.same (parse_variable (make_loc $sloc $symbolstartofs $endofs) (Pos.unmark sp)) sp in
+    let pos = mk_position (make_loc $sloc $symbolstartofs $endofs) in
     let access = Com.FieldAccess (Some (m_sp, -1), idx, field, -1) in
     Com.VarValue (Pos.mark access pos)
   }
 | EVENT_FIELD LPAREN idx = with_pos(expression)
   COMMA field = symbol_with_pos RPAREN {
-    let pos = mk_position $sloc in
+    let pos = mk_position (make_loc $sloc $symbolstartofs $endofs) in
     let access = Com.FieldAccess (None, idx, field, -1) in
     Com.VarValue (Pos.mark access pos)
   }
 | sp = symbol_with_pos DOT v = symbol_with_pos m_i_opt = with_pos(brackets)? {
-    let m_sp = Pos.same (parse_variable $sloc (Pos.unmark sp)) sp in
-    let m_v =  Pos.same (parse_variable $sloc (Pos.unmark v)) v in
+    let m_sp = Pos.same (parse_variable (make_loc $sloc $symbolstartofs $endofs) (Pos.unmark sp)) sp in
+    let m_v =  Pos.same (parse_variable (make_loc $sloc $symbolstartofs $endofs) (Pos.unmark v)) v in
     let a =
       match m_i_opt with
       | None -> Com.VarAccess (Some (m_sp, -1), m_v)
       | Some m_i -> Com.TabAccess (Some (m_sp, -1), m_v, m_i)
     in
-    Com.VarValue (Pos.mark a (mk_position $sloc))
+    Com.VarValue (Pos.mark a (mk_position (make_loc $sloc $symbolstartofs $endofs)))
   }
 | v = symbol_with_pos LBRACKET m_i = with_pos(expression) RBRACKET {
-    let m_v =  Pos.same (parse_variable $sloc (Pos.unmark v)) v in
+    let m_v =  Pos.same (parse_variable (make_loc $sloc $symbolstartofs $endofs) (Pos.unmark v)) v in
     let a = Com.TabAccess (None, m_v, m_i) in
-    Com.VarValue (Pos.mark a (mk_position $sloc))
+    Com.VarValue (Pos.mark a (mk_position (make_loc $sloc $symbolstartofs $endofs)))
   }
 | v = SYMBOL {
-    let pos = mk_position $sloc in
-    match parse_variable_or_int $sloc v with
+    let pos = mk_position (make_loc $sloc $symbolstartofs $endofs) in
+    match parse_variable_or_int (make_loc $sloc $symbolstartofs $endofs) v with
     | ParseVar v' ->
         Com.VarValue (Pos.mark (Com.VarAccess (None, Pos.mark v' pos)) pos)
     | ParseInt i -> Com.FloatValue (Pos.mark (float_of_int i) pos)
@@ -1344,9 +1344,9 @@ enumeration_item:
 
 interval:
 | i1 = SYMBOL RANGE i2 = SYMBOL {
-    let pos = mk_position $sloc in
-    let ir1 = Pos.mark (parse_int $sloc i1) pos in
-    let ir2 = Pos.mark (parse_int $sloc i2) pos in
+    let pos = mk_position (make_loc $sloc $symbolstartofs $endofs) in
+    let ir1 = Pos.mark (parse_int (make_loc $sloc $symbolstartofs $endofs) i1) pos in
+    let ir2 = Pos.mark (parse_int (make_loc $sloc $symbolstartofs $endofs) i2) pos in
     Com.IntervalValue (ir1, ir2) : set_value
   }
  (* Some intervals are "03..06" so we must keep the prefix "0" *)
@@ -1407,7 +1407,7 @@ factor:
 | e = function_call { e }
 | sp = symbol_with_pos DOT EVENT_FIELD LPAREN m_idx = with_pos(expression)
   COMMA field = symbol_with_pos RPAREN {
-    let m_sp =  Pos.same (parse_variable $sloc (Pos.unmark sp)) sp in
+    let m_sp =  Pos.same (parse_variable (make_loc $sloc $symbolstartofs $endofs) (Pos.unmark sp)) sp in
     Var (FieldAccess (Some (m_sp, -1), m_idx, field, -1))
   }
 | EVENT_FIELD LPAREN m_idx = with_pos(expression)
@@ -1416,21 +1416,21 @@ factor:
   }
 | sp = symbol_with_pos DOT v = symbol_with_pos
   LBRACKET m_i = with_pos(sum_expression) RBRACKET {
-    let m_sp =  Pos.same (parse_variable $sloc (Pos.unmark sp)) sp in
-    let m_v = Pos.same (parse_variable $sloc (Pos.unmark v)) v in
+    let m_sp =  Pos.same (parse_variable (make_loc $sloc $symbolstartofs $endofs) (Pos.unmark sp)) sp in
+    let m_v = Pos.same (parse_variable (make_loc $sloc $symbolstartofs $endofs) (Pos.unmark v)) v in
     Var (TabAccess (Some (m_sp, -1), m_v, m_i))
   }
 | v = symbol_with_pos LBRACKET m_i = with_pos(sum_expression) RBRACKET {
-    let m_v = Pos.same (parse_variable $sloc (Pos.unmark v)) v in
+    let m_v = Pos.same (parse_variable (make_loc $sloc $symbolstartofs $endofs) (Pos.unmark v)) v in
     Var (TabAccess (None, m_v, m_i))
   }
 | sp = symbol_with_pos DOT v = symbol_with_pos {
-    let m_sp =  Pos.same (parse_variable $sloc (Pos.unmark sp)) sp in
-    let m_v = Pos.same (parse_variable $sloc (Pos.unmark v)) v in
+    let m_sp =  Pos.same (parse_variable (make_loc $sloc $symbolstartofs $endofs) (Pos.unmark sp)) sp in
+    let m_v = Pos.same (parse_variable (make_loc $sloc $symbolstartofs $endofs) (Pos.unmark v)) v in
     Var (VarAccess (Some (m_sp, -1), m_v))
   }
 | a = SYMBOL {
-    match parse_atom $sloc a with
+    match parse_atom (make_loc $sloc $symbolstartofs $endofs) a with
     | Com.AtomVar v -> Com.Var (VarAccess (None, v))
     | Com.AtomLiteral l -> Com.Literal l
   }
@@ -1456,7 +1456,7 @@ else_branch:
 function_name:
 | VERIF_NUMBER { "numero_verif" }
 | COMPL_NUMBER { "numero_compl" }
-| s = SYMBOL { parse_func_name $sloc s }
+| s = SYMBOL { parse_func_name (make_loc $sloc $symbolstartofs $endofs) s }
 
 function_call:
 | NB_CATEGORY LPAREN cats = with_pos(var_category_id) RPAREN {

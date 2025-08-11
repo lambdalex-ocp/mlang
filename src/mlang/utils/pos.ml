@@ -15,12 +15,20 @@
 
 (** {1 Source code position} *)
 
-type t = { pos_filename : string; pos_loc : Lexing.position * Lexing.position }
+type ofst = { sofst : int; eofst : int}
+
+let make_ofst sofst eofst = { sofst; eofst }
+
+type t = {
+  pos_filename : string;
+  pos_loc : Lexing.position * Lexing.position;
+  pos_ofst : ofst;
+}
 (** A position in the source code is a file, as well as begin and end location
     of the form col:line *)
 
-let make (f : string) (loc : Lexing.position * Lexing.position) =
-  { pos_filename = f; pos_loc = loc }
+let make (f : string) (loc : Lexing.position * Lexing.position) (ofst : ofst) =
+  { pos_filename = f; pos_loc = loc; pos_ofst = ofst }
 
 let make_between (p1 : t) (p2 : t) : t =
   if p1.pos_filename <> p2.pos_filename then begin
@@ -91,7 +99,8 @@ let none : t =
       Lexing.pos_bol = 0;
     }
   in
-  { pos_filename = "unknown t"; pos_loc = (zero_pos, zero_pos) }
+  let pos_ofst = make_ofst 0 0 in
+  { pos_filename = "unknown t"; pos_loc = (zero_pos, zero_pos); pos_ofst }
 
 let without (x : 'a) : 'a marked = Mark (x, none)
 
@@ -133,6 +142,59 @@ let indent_number (s : string) : int =
     let rec aux (i : int) = if s.[i] = ' ' then aux (i + 1) else i in
     aux 0
   with Invalid_argument _ -> String.length s
+
+let extract_lines filename sline eline =
+  let ic = open_in filename in
+  (* read to the correct position *)
+  (* FIXME: figure out where the -2 comes from and properly comment it *)
+  let c = In_channel.input_all ic in
+  let lines = ref (sline - 2) in
+  let i = ref 0 in
+  while !lines > 0 do
+    while String.get c !i != '\n' do
+      incr i
+    done;
+    lines := !lines - 1
+  done;
+
+  (* for _ = 0 to sline - 2 do *)
+  (*   In_channel.input_line ic |> ignore *)
+  (* done; *)
+  In_channel.seek ic (Int64.of_int !i);
+  let read ic =
+    let length = eline - sline + 1 in
+    let lines = Array.make length "" in
+    for i = 0 to length - 1 do
+      match In_channel.input_line ic with
+      | Some line -> lines.(i) <- line
+      | None ->
+          close_in ic;
+          raise @@ Failure ""
+    done;
+    close_in ic;
+    let b = Buffer.create 200 in
+    Array.iter (fun s -> Buffer.add_string b s) lines;
+    Buffer.contents b
+  in
+  match read ic with exception Failure _ -> None | s -> Some s
+
+(* let rec read_lines n lines = *)
+(*   match (n, In_channel.input_line ic) with *)
+(*   | 0, Some line -> Some (line :: lines) *)
+(*   | n, Some line -> read_lines (n - 1) (line :: lines) *)
+(*   | _, None -> None *)
+(* in *)
+(* Call the tail-recursive helper function *)
+(* let lines = (read_lines [@tailcall]) (eline - sline) [] in *)
+(* close_in ic; *)
+(* Option.bind lines @@ *)
+(*   fun lines -> Some (lines |> List.rev |> String.concat "\n") *)
+
+let extract_loc_text_lines (pos : t) : string option =
+  let filename = get_file pos in
+  let sline = get_start_line pos in
+  let eline = get_end_line pos in
+  match filename with "" -> None | _ -> extract_lines filename sline eline
 
 let retrieve_loc_text (pos : t) : string =
   let filename = get_file pos in

@@ -18,9 +18,11 @@
 
 (** {2 Source code position} *)
 
+type ofst = { sofst : int; eofst : int}
+
 type t
 
-val make : string -> Lexing.position * Lexing.position -> t
+val make : string -> Lexing.position * Lexing.position -> ofst -> t
 
 val make_between : t -> t -> t
 
@@ -67,6 +69,11 @@ val get_file : t -> string
 
 val indent_number : string -> int
 
+val extract_loc_text_lines : t -> string option
+(** Given a position, extract the lines specified in the position
+    from the specified file. *)
+
 val retrieve_loc_text : t -> string
 (** Given a source code position, retrieves the content of the code by acessing
-    the file and reading its text *)
+    the file and reading its text. This then adds pretty printing for error
+    showing. *)

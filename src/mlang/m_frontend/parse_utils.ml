@@ -16,22 +16,27 @@
 
 module E = Errors
 
-let mk_position sloc = Pos.make (fst sloc).Lexing.pos_fname sloc
+type loc = { loc : Lexing.position * Lexing.position; ofst : Pos.ofst }
+
+let make_loc loc sofst eofst =
+  { loc; ofst = { sofst; eofst } }
+
+let mk_position loc = Pos.make (fst loc.loc).Lexing.pos_fname loc.loc loc.ofst
 
 (** {1 Frontend variable names}*)
 
-let parse_variable_name sloc (s : string) : string =
+let parse_variable_name loc (s : string) : string =
   if not (String.equal (String.uppercase_ascii s) s) then
-    E.raise_spanned_error "invalid variable name" (mk_position sloc)
+    E.raise_spanned_error "invalid variable name" (mk_position loc)
   else s
 
-let parse_parameter sloc (s : string) : char =
+let parse_parameter loc (s : string) : char =
   if String.length s <> 1 then
-    E.raise_spanned_error "invalid parameter" (mk_position sloc)
+    E.raise_spanned_error "invalid parameter" (mk_position loc)
   else
     let p = s.[0] in
     if p < 'a' || 'z' < p then
-      E.raise_spanned_error "invalid parameter" (mk_position sloc)
+      E.raise_spanned_error "invalid parameter" (mk_position loc)
     else p
 
 (** Checks for duplicate generic parameters *)
@@ -44,7 +49,7 @@ let dup_exists l =
   dup_consecutive (List.sort sort_on_third l)
 
 (** Parse variable with parameters, parameters have to be lowercase letters *)
-let parse_variable_generic_name sloc (s : string) : Com.var_name_generic =
+let parse_variable_generic_name loc (s : string) : Com.var_name_generic =
   let parameters = ref [] in
   for i = String.length s - 1 downto 0 do
     let p = s.[i] in
@@ -57,47 +62,47 @@ let parse_variable_generic_name sloc (s : string) : Com.var_name_generic =
   done;
   if dup_exists !parameters then
     E.raise_spanned_error "variable parameters should have distinct names"
-      (mk_position sloc);
+      (mk_position loc);
   { Com.parameters = !parameters; Com.base = s }
 
-let parse_variable sloc (s : string) =
-  try Com.Normal (parse_variable_name sloc s)
+let parse_variable loc (s : string) =
+  try Com.Normal (parse_variable_name loc s)
   with E.StructuredError _ -> (
-    try Com.Generic (parse_variable_generic_name sloc s)
+    try Com.Generic (parse_variable_generic_name loc s)
     with E.StructuredError _ ->
-      E.raise_spanned_error "invalid variable name" (mk_position sloc))
+      E.raise_spanned_error "invalid variable name" (mk_position loc))
 
 type parse_val = ParseVar of Com.var_name | ParseInt of int
 
-let parse_variable_or_int sloc (s : string) : parse_val =
+let parse_variable_or_int loc (s : string) : parse_val =
   try ParseInt (int_of_string s)
   with Failure _ -> (
-    try ParseVar (Com.Normal (parse_variable_name sloc s))
+    try ParseVar (Com.Normal (parse_variable_name loc s))
     with E.StructuredError _ -> (
-      try ParseVar (Com.Generic (parse_variable_generic_name sloc s))
+      try ParseVar (Com.Generic (parse_variable_generic_name loc s))
       with E.StructuredError _ ->
-        E.raise_spanned_error "invalid variable name" (mk_position sloc)))
+        E.raise_spanned_error "invalid variable name" (mk_position loc)))
 
 let parse_table_size (s : string) : Mast.table_size =
   try Mast.LiteralSize (int_of_string s) with Failure _ -> Mast.SymbolSize s
 
 (**{1 Literal parsing}*)
 
-let parse_literal sloc (s : string) : Com.literal =
+let parse_literal loc (s : string) : Com.literal =
   try Com.Float (float_of_string s)
-  with Failure _ -> E.raise_spanned_error "invalid literal" (mk_position sloc)
+  with Failure _ -> E.raise_spanned_error "invalid literal" (mk_position loc)
 
-let parse_atom sloc (s : string) : Com.m_var_name Com.atom =
+let parse_atom loc (s : string) : Com.m_var_name Com.atom =
   try Com.AtomLiteral (Com.Float (float_of_string s))
   with Failure _ ->
-    Com.AtomVar (Pos.mark (parse_variable sloc s) (mk_position sloc))
+    Com.AtomVar (Pos.mark (parse_variable loc s) (mk_position loc))
 
 let parse_func_name _ (s : string) : Mast.func_name = s
 
-let parse_int sloc (s : string) : int =
+let parse_int loc (s : string) : int =
   try int_of_string s
   with Failure _ ->
-    E.raise_spanned_error "should be an integer" (mk_position sloc)
+    E.raise_spanned_error "should be an integer" (mk_position loc)
 
 (** Parse function name *)
 let parse_function_name f_name =

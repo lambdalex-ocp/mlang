@@ -21,21 +21,24 @@
 (** A parsed variable can be a regular variable or an integer literal *)
 type parse_val = ParseVar of Com.var_name | ParseInt of int
 
-val mk_position : Lexing.position * Lexing.position -> Pos.t
+type loc = { loc : Lexing.position * Lexing.position; ofst : Pos.ofst }
 
-val parse_variable : Lexing.position * Lexing.position -> string -> Com.var_name
+val make_loc : Lexing.position * Lexing.position -> int -> int -> loc
+
+val mk_position : loc -> Pos.t
+
+val parse_variable : loc -> string -> Com.var_name
 (** Checks whether the variable contains parameters *)
 
-val parse_variable_name : Lexing.position * Lexing.position -> string -> string
+val parse_variable_name : loc -> string -> string
 (** Checks whether the string is entirely capitalized *)
 
-val parse_parameter : Lexing.position * Lexing.position -> string -> char
+val parse_parameter : loc -> string -> char
 
 val parse_string : string -> string
 (** Removes the quotes *)
 
-val parse_variable_or_int :
-  Lexing.position * Lexing.position -> string -> parse_val
+val parse_variable_or_int : loc -> string -> parse_val
 
 val parse_table_size : string -> Mast.table_size
 
@@ -43,13 +46,12 @@ val parse_func_name : 'a -> string -> string
 
 (**{1 Literal parsing}*)
 
-val parse_int : Lexing.position * Lexing.position -> string -> int
+val parse_int : loc -> string -> int
 (** Checks whether is it actually an integer*)
 
-val parse_literal : Lexing.position * Lexing.position -> string -> Com.literal
+val parse_literal : loc -> string -> Com.literal
 
-val parse_atom :
-  Lexing.position * Lexing.position -> string -> Com.m_var_name Com.atom
+val parse_atom : loc -> string -> Com.m_var_name Com.atom
 
 val parse_function_name : string Pos.marked -> Com.func Pos.marked
 
