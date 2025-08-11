@@ -69,7 +69,7 @@ val get_file : t -> string
 
 val indent_number : string -> int
 
-val extract_loc_text_lines : t -> string option
+val extract_text_exact_loc : t -> string option
 (** Given a position, extract the lines specified in the position
     from the specified file. *)
 

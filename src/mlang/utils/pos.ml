@@ -119,6 +119,10 @@ let same (x : 'a) (Mark (_, y) : 'b marked) : 'a marked = Mark (x, y)
 let unmark_option (x : 'a marked option) : 'a option =
   match x with Some x -> Some (unmark x) | None -> None
 
+let get_start_ofst (pos : t) : int = pos.pos_ofst.sofst
+
+let get_end_ofst (pos : t) : int = pos.pos_ofst.eofst
+
 let get_start_line (pos : t) : int =
   let s, _ = pos.pos_loc in
   s.Lexing.pos_lnum
@@ -143,58 +147,28 @@ let indent_number (s : string) : int =
     aux 0
   with Invalid_argument _ -> String.length s
 
-let extract_lines filename sline eline =
-  let ic = open_in filename in
-  (* read to the correct position *)
-  (* FIXME: figure out where the -2 comes from and properly comment it *)
-  let c = In_channel.input_all ic in
-  let lines = ref (sline - 2) in
-  let i = ref 0 in
-  while !lines > 0 do
-    while String.get c !i != '\n' do
-      incr i
-    done;
-    lines := !lines - 1
-  done;
-
-  (* for _ = 0 to sline - 2 do *)
-  (*   In_channel.input_line ic |> ignore *)
-  (* done; *)
-  In_channel.seek ic (Int64.of_int !i);
-  let read ic =
-    let length = eline - sline + 1 in
-    let lines = Array.make length "" in
-    for i = 0 to length - 1 do
-      match In_channel.input_line ic with
-      | Some line -> lines.(i) <- line
-      | None ->
-          close_in ic;
-          raise @@ Failure ""
-    done;
-    close_in ic;
-    let b = Buffer.create 200 in
-    Array.iter (fun s -> Buffer.add_string b s) lines;
-    Buffer.contents b
-  in
-  match read ic with exception Failure _ -> None | s -> Some s
-
-(* let rec read_lines n lines = *)
-(*   match (n, In_channel.input_line ic) with *)
-(*   | 0, Some line -> Some (line :: lines) *)
-(*   | n, Some line -> read_lines (n - 1) (line :: lines) *)
-(*   | _, None -> None *)
-(* in *)
-(* Call the tail-recursive helper function *)
-(* let lines = (read_lines [@tailcall]) (eline - sline) [] in *)
-(* close_in ic; *)
-(* Option.bind lines @@ *)
-(*   fun lines -> Some (lines |> List.rev |> String.concat "\n") *)
-
-let extract_loc_text_lines (pos : t) : string option =
+let extract_text_exact_loc (pos : t) : string option =
   let filename = get_file pos in
-  let sline = get_start_line pos in
-  let eline = get_end_line pos in
-  match filename with "" -> None | _ -> extract_lines filename sline eline
+  let sofst = get_start_ofst pos in
+  let eofst = get_end_ofst pos in
+  let len = eofst - sofst in
+  let read ic =
+    let buf = Bytes.create len in
+    In_channel.seek ic (Int64.of_int sofst);
+    In_channel.really_input ic buf 0 len
+    |> Option.map (fun () -> Bytes.to_string buf)
+  in
+  match filename with
+  | "" -> None
+  | _ -> (
+      let ic = open_in filename in
+      match read ic with
+      | exception e ->
+          close_in ic;
+          raise e
+      | oth ->
+          close_in ic;
+          oth)
 
 let retrieve_loc_text (pos : t) : string =
   let filename = get_file pos in
