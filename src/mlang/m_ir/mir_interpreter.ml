@@ -541,7 +541,16 @@ struct
         | Some dbg_info ->
             let name = Com.Var.name_str v in
             let lit = value_to_literal value in
-            let def = None in
+            let pos = Pos.get vexpr in
+            (* let pos_txt = Pos.extract_loc_text_lines pos in *)
+            let def =
+              match StrMap.find_opt name dbg_info.info with
+              | None -> Pos.extract_loc_text_lines pos
+              | Some { def = Some "input variable"; _ } ->
+                  Pos.extract_loc_text_lines pos
+              | Some info -> info.def
+            in
+            (* Format.printf "%s def: %a@." name (Pp.option Pp.string) def; *)
             let rule_id = ctx.ctx_current_rule in
             let info = Dbg_info.Info.make v def lit rule_id in
             let info = StrMap.add name info dbg_info.info in
