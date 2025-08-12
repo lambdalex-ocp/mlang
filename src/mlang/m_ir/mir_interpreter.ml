@@ -212,15 +212,11 @@ struct
       | false -> None
       | true ->
           let dbg_info = Dbg_info.empty in
+          (* Adding all declared variables here. *)
           let add_to_map str var map =
             let t =
               Dbg_info.Info.
-                {
-                  var;
-                  def = Some "input variable";
-                  vval = Undefined;
-                  rule_id = None;
-                }
+                { var; def = None; vval = Undefined; origin = Declared }
             in
             StrMap.add str t map
           in
@@ -542,16 +538,18 @@ struct
             let name = Com.Var.name_str v in
             let lit = value_to_literal value in
             let pos = Pos.get vexpr in
-            (* let pos_txt = Pos.extract_loc_text_lines pos in *)
+            (* we should do that only if we've not done it yet. *)
             let def =
               match StrMap.find_opt name dbg_info.info with
               | None -> Pos.extract_text_exact_loc pos
-              | Some { def = Some "input variable"; _ } ->
-                  Pos.extract_text_exact_loc pos
-              | Some info -> info.def
+              | Some { def = None; _ } -> Pos.extract_text_exact_loc pos
+              | Some { def = Some _ as def; _ } -> def
             in
-            (* Format.printf "%s def: %a@." name (Pp.option Pp.string) def; *)
-            let rule_id = ctx.ctx_current_rule in
+            let rule_id =
+              match ctx.ctx_current_rule with
+              | Some i -> Dbg_info.Origin.Rule i
+              | None -> raise @@ Failure "no rule id"
+            in
             let info = Dbg_info.Info.make v def lit rule_id in
             let info = StrMap.add name info dbg_info.info in
             let vert = Dbg_info.Graph.V.create name in

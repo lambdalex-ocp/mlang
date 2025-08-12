@@ -1,13 +1,17 @@
+module Origin = struct
+  type t = Rule of int | Declared | Input
+end
+
 module Info = struct
   type t = {
     var : Com.Var.t;
     def : string option;
     vval : Com.literal;
-    rule_id : int option;
+    origin : Origin.t;
   }
   (* We've removed idx_opt, it may be needed for tables. *)
 
-  let make var def vval rule_id = { var; def; vval; rule_id }
+  let make var def vval origin = { var; def; vval; origin }
 end
 
 module Graph = Graph.Persistent.Digraph.Concrete (struct
@@ -44,7 +48,7 @@ let to_json (fmt : Format.formatter) info : unit =
   in
   Format.printf "writing edges...@.";
   Graph.iter_edges_e print_edge info.graph;
-  let print_info var_name { var; def; vval; rule_id; _ } =
+  let print_info var_name { var; def; vval; origin; _ } =
     let scope =
       match var.scope with Tgv _ -> "tgv" | Temp _ -> "temp" | Ref -> "ref"
     in
@@ -84,9 +88,10 @@ let to_json (fmt : Format.formatter) info : unit =
     let pp_none fmt () = fprintf fmt "" in
     let pp_opt = pp_print_option ~none:pp_none pp_string in
     let rule_id =
-      match rule_id with
-      | Some i -> Format.asprintf {|, "rule_id": %d|} i
-      | None -> ""
+      match origin with
+      | Rule i -> Format.asprintf {|, "origin": %d|} i
+      | Input -> {|, "origin": "input"|}
+      | Declared -> {|, "origin": "declaration"|}
     in
     Format.fprintf fmt
       {|%s"%s": {"def": "%a", "value": "%a", "scope": "%s" %s %s}|} !delim

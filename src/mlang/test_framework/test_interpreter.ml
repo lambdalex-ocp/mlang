@@ -194,11 +194,20 @@ let check_test ?(files : string list option) (program : Mir.program)
         (match (dep_graph_file, dbg_info) with
         | None, None -> ()
         | Some filename, Some dbg_info ->
-            (* Add the input variables value *)
+            (* Add the input variables value - But only if they have not been set
+               (not set == origin = Declared) *)
             let add_to_map var lit map =
               let name = Com.Var.name_str var in
-              StrMap.add name
-                Dbg_info.Info.{ var; def = None; vval = lit; rule_id = None }
+              Format.printf "@.adding %s" name;
+              StrMap.update name
+                (function
+                  | Some Dbg_info.Info.{ origin = Declared; _ } | None ->
+                      Format.printf " - no info";
+                      let def = Some "input-set" in
+                      let rule_id = Dbg_info.Origin.Input in
+                      let info = Dbg_info.Info.make var def lit rule_id in
+                      Some info
+                  | oth -> oth)
                 map
             in
             let info = Com.Var.Map.fold add_to_map inst.vars dbg_info.info in
