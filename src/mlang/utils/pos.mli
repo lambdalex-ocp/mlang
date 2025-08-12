@@ -18,7 +18,7 @@
 
 (** {2 Source code position} *)
 
-type ofst = { sofst : int; eofst : int}
+type ofst = { sofst : int; eofst : int }
 
 type t
 

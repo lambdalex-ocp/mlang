@@ -15,7 +15,7 @@
 
 (** {1 Source code position} *)
 
-type ofst = { sofst : int; eofst : int}
+type ofst = { sofst : int; eofst : int }
 
 let make_ofst sofst eofst = { sofst; eofst }
 

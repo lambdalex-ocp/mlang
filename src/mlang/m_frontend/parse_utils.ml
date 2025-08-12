@@ -18,8 +18,7 @@ module E = Errors
 
 type loc = { loc : Lexing.position * Lexing.position; ofst : Pos.ofst }
 
-let make_loc loc sofst eofst =
-  { loc; ofst = { sofst; eofst } }
+let make_loc loc sofst eofst = { loc; ofst = { sofst; eofst } }
 
 let mk_position loc = Pos.make (fst loc.loc).Lexing.pos_fname loc.loc loc.ofst
 
