@@ -1,5 +1,5 @@
 module Origin = struct
-  type t = Rule of int | Declared | Input
+  type t = Rule of int | Declared | Input | Target of string
 end
 
 module Info = struct
@@ -92,6 +92,7 @@ let to_json (fmt : Format.formatter) info : unit =
       | Rule i -> Format.asprintf {|, "origin": %d|} i
       | Input -> {|, "origin": "input"|}
       | Declared -> {|, "origin": "declaration"|}
+      | Target s -> Format.asprintf {|, "origin": "target-%s"|} s
     in
     Format.fprintf fmt
       {|%s"%s": {"def": "%a", "value": "%a", "scope": "%s" %s %s}|} !delim

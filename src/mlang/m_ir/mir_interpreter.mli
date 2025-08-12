@@ -65,6 +65,11 @@ module type S = sig
     base : value Array.t;
   }
 
+  type ctx_exec_ctx =
+    | CtxUndefined
+    | CtxTarget of string
+    | CtxRule of int  (** Marker to in which context are variables set *)
+
   type ctx = {
     ctx_prog : Mir.program;
     mutable ctx_target : Mir.target;
@@ -88,7 +93,7 @@ module type S = sig
     mutable ctx_events :
       (value, Com.Var.t) Com.event_value Array.t Array.t list;
     mutable ctx_dbg_info : Dbg_info.t option;
-    mutable ctx_current_rule : int option;
+    mutable ctx_exec_ctx : ctx_exec_ctx;
   }
   (** Interpretation context *)
 

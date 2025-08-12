@@ -44,6 +44,8 @@ module type S = sig
     base : value Array.t;
   }
 
+  type ctx_exec_ctx = CtxUndefined | CtxTarget of string | CtxRule of int
+
   type ctx = {
     ctx_prog : Mir.program;
     mutable ctx_target : Mir.target;
@@ -67,7 +69,7 @@ module type S = sig
     mutable ctx_events :
       (value, Com.Var.t) Com.event_value Array.t Array.t list;
     mutable ctx_dbg_info : Dbg_info.t option;
-    mutable ctx_current_rule : int option;
+    mutable ctx_exec_ctx : ctx_exec_ctx;
   }
 
   val empty_ctx : Mir.program -> (* dbg_info *) bool -> ctx
@@ -144,6 +146,8 @@ struct
     base : value Array.t;
   }
 
+  type ctx_exec_ctx = CtxUndefined | CtxTarget of string | CtxRule of int
+
   type ctx = {
     ctx_prog : Mir.program;
     mutable ctx_target : Mir.target;
@@ -167,7 +171,7 @@ struct
     mutable ctx_events :
       (value, Com.Var.t) Com.event_value Array.t Array.t list;
     mutable ctx_dbg_info : Dbg_info.t option;
-    mutable ctx_current_rule : int option;
+    mutable ctx_exec_ctx : ctx_exec_ctx;
   }
 
   let empty_ctx (p : Mir.program) (dbg_flag : bool) : ctx =
@@ -245,7 +249,7 @@ struct
       ctx_exported_anos = [];
       ctx_events = [];
       ctx_dbg_info;
-      ctx_current_rule = None;
+      ctx_exec_ctx = CtxUndefined;
     }
 
   let literal_to_value (l : Com.literal) : value =
@@ -546,9 +550,10 @@ struct
               | Some { def = Some _ as def; _ } -> def
             in
             let rule_id =
-              match ctx.ctx_current_rule with
-              | Some i -> Dbg_info.Origin.Rule i
-              | None -> raise @@ Failure "no rule id"
+              match ctx.ctx_exec_ctx with
+              | CtxRule i -> Dbg_info.Origin.Rule i
+              | CtxTarget s -> Dbg_info.Origin.Target s
+              | CtxUndefined -> raise @@ Failure "no rule id"
             in
             let info = Dbg_info.Info.make v def lit rule_id in
             let info = StrMap.add name info dbg_info.info in
@@ -1220,7 +1225,9 @@ struct
           | None -> if str = target_name then Some i else None)
         ctx.ctx_prog.program_rules None
     in
-    ctx.ctx_current_rule <- rule_id;
+    (match rule_id with
+    | None -> ctx.ctx_exec_ctx <- CtxTarget target_name
+    | Some rule_id -> ctx.ctx_exec_ctx <- CtxRule rule_id);
     let rec set_args n vl al =
       match (vl, al) with
       | v :: vl', m_a :: al' -> (
