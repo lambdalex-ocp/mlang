@@ -545,9 +545,9 @@ struct
             (* let pos_txt = Pos.extract_loc_text_lines pos in *)
             let def =
               match StrMap.find_opt name dbg_info.info with
-              | None -> Pos.extract_loc_text_lines pos
+              | None -> Pos.extract_text_exact_loc pos
               | Some { def = Some "input variable"; _ } ->
-                  Pos.extract_loc_text_lines pos
+                  Pos.extract_text_exact_loc pos
               | Some info -> info.def
             in
             (* Format.printf "%s def: %a@." name (Pp.option Pp.string) def; *)
