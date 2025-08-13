@@ -972,6 +972,7 @@ let get_targets (p : Validator.program) (dict : Com.Var.t IntMap.t)
       let is_f = Com.target_is_function t in
       let target_name = t.target_name in
       let target_file = t.target_file in
+      let target_filepath = t.target_filepath in
       let target_apps = t.target_apps in
       let target_nb_tmps = t.target_nb_tmps in
       let target_nb_refs = t.target_nb_refs in
@@ -999,6 +1000,7 @@ let get_targets (p : Validator.program) (dict : Com.Var.t IntMap.t)
           {
             target_name;
             target_file;
+            target_filepath;
             target_apps;
             target_args;
             target_result;

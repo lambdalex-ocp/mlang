@@ -2272,6 +2272,7 @@ let check_target (proc_type : proc_type) (t : Mast.target) (prog : program) :
       Err.target_already_declared tname old_pos tpos
   | None -> ());
   let target_file = Some (get_target_file tpos) in
+  let target_filepath = Some (Pos.get_file tpos) in
   let target_apps =
     (* Already checked during preprocessing *)
     t.target_apps
@@ -2287,6 +2288,7 @@ let check_target (proc_type : proc_type) (t : Mast.target) (prog : program) :
       {
         target_name;
         target_file;
+        target_filepath;
         target_apps;
         target_args;
         target_result;
@@ -2376,12 +2378,14 @@ let convert_rules (prog : program) : program =
         let tpos = Pos.get rule.rule_id in
         let tname = Format.sprintf "%s_regle_%d" prog.prog_prefix id in
         let target_file = Some (get_target_file tpos) in
+        let target_filepath = Some (Pos.get_file tpos) in
         let target_prog = rule.rule_instrs in
         let target =
           Com.
             {
               target_name = Pos.mark tname tpos;
               target_file;
+              target_filepath;
               target_apps = StrMap.mapi Pos.mark prog.prog_app;
               target_args = [];
               target_result = None;
@@ -2578,6 +2582,7 @@ let complete_rule_domains (prog : program) : program =
               {
                 target_name = Pos.mark tname tpos;
                 target_file = None;
+                target_filepath = None;
                 target_apps = StrMap.mapi Pos.mark prog.prog_app;
                 target_args = [];
                 target_result = None;
@@ -2697,6 +2702,7 @@ let complete_chainings (prog : program) : program =
             {
               target_name = Pos.mark tname tpos;
               target_file = None;
+              target_filepath = None;
               target_apps = StrMap.mapi Pos.mark prog.prog_app;
               target_args = [];
               target_result = None;
@@ -2809,6 +2815,7 @@ let convert_verifs (prog : program) : program =
         let tpos = Pos.get verif.verif_id in
         let tname = Format.sprintf "%s_verif_%d" prog.prog_prefix id in
         let target_file = Some (get_target_file tpos) in
+        let target_filepath = Some (Pos.get_file tpos) in
         let target_prog =
           let map_var m_v =
             let name = Com.get_normal_var (Pos.unmark m_v) in
@@ -2833,6 +2840,7 @@ let convert_verifs (prog : program) : program =
             {
               target_name = Pos.mark tname tpos;
               target_file;
+              target_filepath;
               target_apps = StrMap.mapi Pos.mark prog.prog_app;
               target_args = [];
               target_result = None;
@@ -3086,6 +3094,7 @@ let complete_verif_calls (prog : program) : program =
                 {
                   target_name = Pos.without tname;
                   target_file = None;
+                  target_filepath = None;
                   target_apps = StrMap.mapi Pos.mark prog.prog_app;
                   target_args = [];
                   target_result = None;
@@ -3127,6 +3136,7 @@ let complete_verif_calls (prog : program) : program =
                 {
                   target_name = Pos.without tname;
                   target_file = None;
+                  target_filepath = None;
                   target_apps = StrMap.mapi Pos.mark prog.prog_app;
                   target_args = [];
                   target_result = None;

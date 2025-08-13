@@ -690,6 +690,7 @@ and ('v, 'e) m_instruction = ('v, 'e) instruction Pos.marked
 type ('v, 'e) target = {
   target_name : string Pos.marked;
   target_file : string option;
+  target_filepath : string option;
   target_apps : string Pos.marked StrMap.t;
   target_args : 'v list;
   target_result : 'v option;
