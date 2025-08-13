@@ -163,20 +163,6 @@ let extract_text_exact_loc (pos : t) ic : string option =
   match ic with
   | None -> None
   | Some ic -> (
-      (* let ic = *)
-      (*   match !last_ic with *)
-      (*   | Some (fn, ic) when fn = filename ->  *)
-      (*       ic *)
-      (*   | Some (fn, ic) -> *)
-      (*       close_in ic; *)
-      (*       let ic = open_in filename in *)
-      (*       last_ic := Some (filename, ic); *)
-      (*       ic *)
-      (*   | None -> *)
-      (*       let ic = open_in filename in *)
-      (*       last_ic := Some (filename, ic); *)
-      (*       ic *)
-      (* in *)
       match read ic with
       | exception e ->
           close_in ic;
