@@ -147,8 +147,10 @@ let indent_number (s : string) : int =
     aux 0
   with Invalid_argument _ -> String.length s
 
-let extract_text_exact_loc (pos : t) : string option =
-  let filename = get_file pos in
+let last_ic = ref None
+
+(**)
+let extract_text_exact_loc (pos : t) ic : string option =
   let sofst = get_start_ofst pos in
   let eofst = get_end_ofst pos in
   let len = eofst - sofst in
@@ -158,16 +160,28 @@ let extract_text_exact_loc (pos : t) : string option =
     In_channel.really_input ic buf 0 len
     |> Option.map (fun () -> Bytes.to_string buf)
   in
-  match filename with
-  | "" -> None
-  | _ -> (
-      let ic = open_in filename in
+  match ic with
+  | None -> None
+  | Some ic -> (
+      (* let ic = *)
+      (*   match !last_ic with *)
+      (*   | Some (fn, ic) when fn = filename ->  *)
+      (*       ic *)
+      (*   | Some (fn, ic) -> *)
+      (*       close_in ic; *)
+      (*       let ic = open_in filename in *)
+      (*       last_ic := Some (filename, ic); *)
+      (*       ic *)
+      (*   | None -> *)
+      (*       let ic = open_in filename in *)
+      (*       last_ic := Some (filename, ic); *)
+      (*       ic *)
+      (* in *)
       match read ic with
       | exception e ->
           close_in ic;
           raise e
       | oth ->
-          close_in ic;
           oth)
 
 let retrieve_loc_text (pos : t) : string =

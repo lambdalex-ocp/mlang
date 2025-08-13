@@ -70,6 +70,7 @@ module type S = sig
       (value, Com.Var.t) Com.event_value Array.t Array.t list;
     mutable ctx_dbg_info : Dbg_info.t option;
     mutable ctx_exec_ctx : ctx_exec_ctx;
+    ctx_ics : In_channel.t StrMap.t;
   }
 
   val empty_ctx : Mir.program -> (* dbg_info *) bool -> ctx
@@ -172,6 +173,7 @@ struct
       (value, Com.Var.t) Com.event_value Array.t Array.t list;
     mutable ctx_dbg_info : Dbg_info.t option;
     mutable ctx_exec_ctx : ctx_exec_ctx;
+    ctx_ics : In_channel.t StrMap.t;
   }
 
   let empty_ctx (p : Mir.program) (dbg_flag : bool) : ctx =
@@ -227,6 +229,18 @@ struct
           let info = StrMap.fold add_to_map p.program_vars dbg_info.info in
           Some { dbg_info with info }
     in
+    let ctx_ics =
+      let targets = StrMap.bindings p.program_targets |> List.map snd in
+      let filepaths =
+        List.filter_map (fun t -> t.Com.target_filepath) targets
+      in
+      let filepath_set = StrSet.of_list filepaths in
+      StrSet.fold
+        (fun path map ->
+          let ic = open_in path in
+          StrMap.add path ic map)
+        filepath_set StrMap.empty
+    in
     {
       ctx_prog = p;
       ctx_target = snd (StrMap.min_binding p.program_targets);
@@ -250,6 +264,7 @@ struct
       ctx_events = [];
       ctx_dbg_info;
       ctx_exec_ctx = CtxUndefined;
+      ctx_ics;
     }
 
   let literal_to_value (l : Com.literal) : value =
@@ -544,9 +559,11 @@ struct
             let pos = Pos.get vexpr in
             (* we should do that only if we've not done it yet. *)
             let def =
+              let filename = Pos.get_file pos in
+              let ic_opt = StrMap.find_opt filename ctx.ctx_ics in
               match StrMap.find_opt name dbg_info.info with
-              | None -> Pos.extract_text_exact_loc pos
-              | Some { def = None; _ } -> Pos.extract_text_exact_loc pos
+              | None | Some { def = None; _ } ->
+                  Pos.extract_text_exact_loc pos ic_opt
               | Some { def = Some _ as def; _ } -> def
             in
             let rule_id =
@@ -1408,6 +1425,7 @@ let evaluate_program (p : Mir.program) (inputs : Com.literal Com.Var.Map.t)
     let fold res (e, _) = Com.Error.Set.add e res in
     List.fold_left fold Com.Error.Set.empty ctx.ctx_exported_anos
   in
+  StrMap.iter (fun _ ic -> close_in ic) ctx.ctx_ics;
   let dbg_info = ctx.ctx_dbg_info in
   (varMap, anoSet, dbg_info)
 
