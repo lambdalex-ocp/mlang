@@ -150,38 +150,34 @@ let indent_number (s : string) : int =
 let last_ic = ref None
 
 (**)
-let extract_text_exact_loc (pos : t) ic : string option =
+let extract_text_exact_loc (pos : t) file : string option =
   let sofst = get_start_ofst pos in
   let eofst = get_end_ofst pos in
   let len = eofst - sofst in
   (* TODO: Replace '\n' with "\n" in a performant way.*)
-  let replace_newline buf =
-    let len = Bytes.length buf - 1 in
-    for i = 0 to len do
+  let replace_newline (buf : string) =
+    let buf = Bytes.of_string buf in
+    for i = 0 to len - 1 do
       let byte = Bytes.get buf i in
       match byte with
-      | '\t' -> Bytes.set buf i ' '
+      | '\t' -> BytesLabels.set buf i ' '
       | '\n' -> Bytes.set buf i ' '
       | _ -> ()
     done;
-    buf
+    Bytes.to_string buf
   in
-  let read ic =
-    let buf = Bytes.create len in
-    In_channel.seek ic (Int64.of_int sofst);
-    In_channel.really_input ic buf 0 len
-    |> Option.map (fun () ->
-           replace_newline buf |>
-           Bytes.to_string)
+  let read file =
+    let str = String.sub file sofst len in
+    Some (replace_newline str)
+    (* In_channel.seek ic (Int64.of_int sofst); *)
+    (* In_channel.really_input ic buf 0 len *)
+    (* |> Option.map (fun () -> *)
+    (*        replace_newline buf |> *)
+    (*        Bytes.to_string) *)
   in
-  match ic with
+  match file with
   | None -> None
-  | Some ic -> (
-      match read ic with
-      | exception e ->
-          close_in ic;
-          raise e
-      | oth -> oth)
+  | Some file -> read file
 
 let retrieve_loc_text (pos : t) : string =
   let filename = get_file pos in

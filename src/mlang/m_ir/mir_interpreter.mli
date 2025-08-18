@@ -94,7 +94,7 @@ module type S = sig
       (value, Com.Var.t) Com.event_value Array.t Array.t list;
     mutable ctx_dbg_info : Dbg_info.t option;
     mutable ctx_exec_ctx : ctx_exec_ctx;
-    ctx_ics : In_channel.t StrMap.t;
+    ctx_ics : string StrMap.t;
   }
   (** Interpretation context *)
 

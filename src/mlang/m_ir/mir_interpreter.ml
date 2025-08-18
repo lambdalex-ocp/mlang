@@ -70,7 +70,7 @@ module type S = sig
       (value, Com.Var.t) Com.event_value Array.t Array.t list;
     mutable ctx_dbg_info : Dbg_info.t option;
     mutable ctx_exec_ctx : ctx_exec_ctx;
-    ctx_ics : In_channel.t StrMap.t;
+    ctx_ics : string StrMap.t;
   }
 
   val empty_ctx : Mir.program -> (* dbg_info *) bool -> ctx
@@ -173,7 +173,7 @@ struct
       (value, Com.Var.t) Com.event_value Array.t Array.t list;
     mutable ctx_dbg_info : Dbg_info.t option;
     mutable ctx_exec_ctx : ctx_exec_ctx;
-    ctx_ics : In_channel.t StrMap.t;
+    ctx_ics : string StrMap.t;
   }
 
   let empty_ctx (p : Mir.program) (dbg_flag : bool) : ctx =
@@ -238,7 +238,10 @@ struct
       StrSet.fold
         (fun path map ->
           let ic = open_in path in
-          StrMap.add path ic map)
+          let contents = In_channel.input_all ic in
+          let map = StrMap.add path contents map in
+          In_channel.close ic;
+          map)
         filepath_set StrMap.empty
     in
     {
@@ -1425,7 +1428,6 @@ let evaluate_program (p : Mir.program) (inputs : Com.literal Com.Var.Map.t)
     let fold res (e, _) = Com.Error.Set.add e res in
     List.fold_left fold Com.Error.Set.empty ctx.ctx_exported_anos
   in
-  StrMap.iter (fun _ ic -> close_in ic) ctx.ctx_ics;
   let dbg_info = ctx.ctx_dbg_info in
   (varMap, anoSet, dbg_info)
 
