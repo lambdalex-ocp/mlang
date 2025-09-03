@@ -220,9 +220,10 @@ struct
           let dbg_info = Dbg_info.empty in
           (* Adding all declared variables here. *)
           let add_to_map str var map =
+            let origin = Dbg_info.Origin.make "mir_interp.ml" 0 Declared in
             let t =
               Dbg_info.Info.
-                { var; def = None; vval = Undefined; origin = Declared }
+                { var; def = None; vval = Undefined; origin }
             in
             StrMap.add str t map
           in
@@ -560,9 +561,9 @@ struct
             let name = Com.Var.name_str v in
             let lit = value_to_literal value in
             let pos = Pos.get vexpr in
+            let filename = Pos.get_file pos in
             (* we should do that only if we've not done it yet. *)
             let def =
-              let filename = Pos.get_file pos in
               let ic_opt = StrMap.find_opt filename ctx.ctx_ics in
               match StrMap.find_opt name dbg_info.info with
               | None | Some { def = None; _ } ->
@@ -575,7 +576,9 @@ struct
               | CtxTarget s -> Dbg_info.Origin.Target s
               | CtxUndefined -> raise @@ Failure "no rule id"
             in
-            let info = Dbg_info.Info.make v def lit rule_id in
+            let file = Filename.basename filename in
+            let origin = Dbg_info.Origin.make file (Pos.get_start_line pos) rule_id in
+            let info = Dbg_info.Info.make v def lit origin in
             let info = StrMap.add name info dbg_info.info in
             let vert = Dbg_info.Graph.V.create name in
             let graph = dbg_info.graph in

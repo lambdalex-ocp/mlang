@@ -1,5 +1,10 @@
 module Origin = struct
-  type t = Rule of int | Declared | Input | Target of string
+  type code = Rule of int | Declared | Input | Target of string
+
+  type t = { filename : string; line : int; code_orig : code }
+
+  let make filename line code_orig = {filename; line; code_orig}
+
 end
 
 module Info = struct
@@ -88,15 +93,21 @@ let to_json (fmt : Format.formatter) info : unit =
     let pp_none fmt () = fprintf fmt "" in
     let pp_opt = pp_print_option ~none:pp_none pp_string in
     let rule_id =
-      match origin with
-      | Rule i -> Format.asprintf {|, "origin": %d|} i
-      | Input -> {|, "origin": "input"|}
-      | Declared -> {|, "origin": "declaration"|}
-      | Target s -> Format.asprintf {|, "origin": "target-%s"|} s
+      let code_orig =
+        match origin.code_orig with
+        | Rule i -> Format.asprintf "%d" i
+        | Input -> "input"
+        | Declared -> "declaration"
+        | Target s -> Format.asprintf "target-%s" s
+      in
+      Format.asprintf
+        {|, "origin": {"code_orig": "%s", "file": "%s", "line": %d }|}
+        code_orig origin.filename origin.line
     in
     Format.fprintf fmt
-      {|%s"%s": {"def": "%a", "value": "%a", "scope": "%s" %s %s}|} !delim
-      var_name pp_opt def Com.format_literal vval scope rule_id tgv_details;
+      {|%s"%s": {"def": "%a", "value": "%a", "scope": "%s" %s %s}|}
+      !delim var_name pp_opt def Com.format_literal vval scope rule_id
+      tgv_details;
     delim := ","
   in
   Format.fprintf fmt "],@.";
