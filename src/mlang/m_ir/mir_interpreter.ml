@@ -603,7 +603,11 @@ struct
               List.fold_left add_edge graph (var_names @ const_names)
             in
             let add_to_consts map const =
-              StrMap.add const.Com.id const.value map
+              let id = const.Com.id in
+              let fname = Filename.basename @@ Pos.get_file const.pos in
+              let line = Pos.get_start_line const.pos in
+              let const = Const.make const.Com.value fname line in
+              StrMap.add id const map
             in
             let consts = List.fold_left add_to_consts dbg_info.consts consts in
             ctx.ctx_dbg_info <- Some { graph; info; consts })

@@ -432,7 +432,9 @@ type variable_space = {
 
 type literal = Float of float | Undefined
 
-type literal_with_orig = { lit : literal; origin : string option }
+type origin = string Pos.marked option
+
+type literal_with_orig = { lit : literal; origin : origin }
 
 (** Unary operators *)
 type unop = Not | Minus
@@ -522,7 +524,7 @@ and 'v expression =
 
 and 'v m_expression = 'v expression Pos.marked
 
-type const = { id : string; value : literal }
+type const = { id : string; value : literal; pos : Pos.t }
 
 type 'v dep = V of 'v | Const of const
 
@@ -563,8 +565,8 @@ let get_used_variables (e : 'v expression) :
         match var with
         | VarAccess (_, v) | TabAccess (_, v, _) -> (V v, None) :: acc
         | FieldAccess (_, Mark (v, _), _, _) -> get_used_variables_ v acc)
-    | Literal { lit; origin = Some id } ->
-        (Const { id; value = lit }, None) :: acc
+    | Literal { lit; origin = Some (Mark (id, pos)) } ->
+        (Const { id; value = lit; pos }, None) :: acc
     | Literal _ | NbCategory _ | NbAnomalies | NbDiscordances | NbInformatives
     | NbBloquantes ->
         acc
@@ -575,13 +577,13 @@ let mk_lit_with_orig lit origin = { lit; origin }
 
 let mk_lit lit = Literal (mk_lit_with_orig lit None)
 
-let mk_lit_from_const lit constname =
-  Literal (mk_lit_with_orig lit (Some constname))
+let mk_lit_from_const lit constname pos =
+  Literal (mk_lit_with_orig lit (Some (Mark (constname, pos))))
 
 let mk_atomlit lit = AtomLiteral (mk_lit_with_orig lit None)
 
-let mk_atomlit_from_const lit constname =
-  AtomLiteral (mk_lit_with_orig lit (Some constname))
+let mk_atomlit_from_const lit constname pos =
+  AtomLiteral (mk_lit_with_orig lit (Some (Mark (constname, pos))))
 
 module Error = struct
   type typ = Anomaly | Discordance | Information
