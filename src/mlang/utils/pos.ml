@@ -175,9 +175,7 @@ let extract_text_exact_loc (pos : t) file : string option =
     (*        replace_newline buf |> *)
     (*        Bytes.to_string) *)
   in
-  match file with
-  | None -> None
-  | Some file -> read file
+  match file with None -> None | Some file -> read file
 
 let retrieve_loc_text (pos : t) : string =
   let filename = get_file pos in

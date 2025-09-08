@@ -200,7 +200,9 @@ let check_test ?(files : string list option) (program : Mir.program)
               let name = Com.Var.name_str var in
               StrMap.update name
                 (function
-                  | Some Dbg_info.Info.{ origin = { code_orig = Declared; _ }; _ } | None ->
+                  | Some
+                      Dbg_info.Info.{ origin = { code_orig = Declared; _ }; _ }
+                  | None ->
                       let def = Some "input-set" in
                       let rule_id = Dbg_info.Origin.Input in
                       let file = "test_interpreter.ml" in
