@@ -923,7 +923,7 @@ and expand_instructions (const_map : const_context)
   List.fold_left (expand_instruction const_map) [] (List.rev instrs)
 
 let elim_constants_and_loops (p : Mast.program) : Mast.program =
-  let const_map, expanded_prog =
+  let _, expanded_prog =
     List.fold_left
       (fun (const_map, prog) source_file ->
         let const_map, prog_file =
