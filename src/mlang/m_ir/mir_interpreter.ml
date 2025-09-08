@@ -222,8 +222,7 @@ struct
           let add_to_map str var map =
             let origin = Dbg_info.Origin.make "mir_interp.ml" 0 Declared in
             let t =
-              Dbg_info.Info.
-                { var; def = None; vval = Undefined; origin }
+              Dbg_info.Info.{ var; def = None; vval = Undefined; origin }
             in
             StrMap.add str t map
           in
@@ -558,6 +557,7 @@ struct
         match ctx.ctx_dbg_info with
         | None -> ()
         | Some dbg_info ->
+            let open Dbg_info in
             let name = Com.Var.name_str v in
             let lit = value_to_literal value in
             let pos = Pos.get vexpr in
@@ -577,21 +577,36 @@ struct
               | CtxUndefined -> raise @@ Failure "no rule id"
             in
             let file = Filename.basename filename in
-            let origin = Dbg_info.Origin.make file (Pos.get_start_line pos) rule_id in
+            let origin =
+              Dbg_info.Origin.make file (Pos.get_start_line pos) rule_id
+            in
             let info = Dbg_info.Info.make v def lit origin in
             let info = StrMap.add name info dbg_info.info in
             let vert = Dbg_info.Graph.V.create name in
             let graph = dbg_info.graph in
             let deps = Com.get_used_variables @@ Pos.unmark vexpr in
-            let dep_names =
-              List.map (fun (var, _) -> Com.Var.name_str var) deps
+            let vars, consts =
+              List.fold_left
+                (fun (vars, consts) dep ->
+                  match fst dep with
+                  | Com.V var -> (var :: vars, consts)
+                  | Const c -> (vars, c :: consts))
+                ([], []) deps
             in
+            let var_names = List.map Com.Var.name_str vars in
+            let const_names = List.map (fun c -> c.Com.id) consts in
             let add_edge graph depname =
               let dep_vert = Dbg_info.Graph.V.create depname in
               Dbg_info.Graph.add_edge graph vert dep_vert
             in
-            let graph = List.fold_left add_edge graph dep_names in
-            ctx.ctx_dbg_info <- Some { graph; info })
+            let graph =
+              List.fold_left add_edge graph (var_names @ const_names)
+            in
+            let add_to_consts map const =
+              StrMap.add const.Com.id const.value map
+            in
+            let consts = List.fold_left add_to_consts dbg_info.consts consts in
+            ctx.ctx_dbg_info <- Some { graph; info; consts })
 
   and evaluate_expr (ctx : ctx) (e : Mir.expression Pos.marked) : value =
     let comparison op new_e1 new_e2 =

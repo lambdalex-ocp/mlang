@@ -318,7 +318,11 @@ and 'v expression =
 
 and 'v m_expression = 'v expression Pos.marked
 
-val get_used_variables : 'v expression -> ('v * 'v expression option) list
+type const = { id : string; value : literal }
+
+type 'v dep = V of 'v | Const of const
+
+val get_used_variables : 'v expression -> ('v dep * 'v expression option) list
 
 val mk_atomlit : literal -> 'v atom
 (** [mk_atomtit lit] makes a Literal expression with no origin *)

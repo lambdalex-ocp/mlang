@@ -522,10 +522,15 @@ and 'v expression =
 
 and 'v m_expression = 'v expression Pos.marked
 
+type const = { id : string; value : literal }
+
+type 'v dep = V of 'v | Const of const
+
 (* This code was taken from Noe and adapted to the 2025 var architecture *)
-let get_used_variables (e : 'v expression) : ('v * 'v expression option) list =
+let get_used_variables (e : 'v expression) :
+    ('v dep * 'v expression option) list =
   let rec get_used_variables_ (e : 'v expression)
-      (acc : ('v * 'v expression option) list) =
+      (acc : ('v dep * 'v expression option) list) =
     match e with
     | TestInSet (_, Mark (e, _), _) | Unop (_, Mark (e, _)) ->
         let acc = get_used_variables_ e acc in
@@ -556,8 +561,10 @@ let get_used_variables (e : 'v expression) : ('v * 'v expression option) list =
     | Attribut (Mark (var, _), _)
     | IsVariable (Mark (var, _), _) -> (
         match var with
-        | VarAccess (_, v) | TabAccess (_, v, _) -> (v, None) :: acc
+        | VarAccess (_, v) | TabAccess (_, v, _) -> (V v, None) :: acc
         | FieldAccess (_, Mark (v, _), _, _) -> get_used_variables_ v acc)
+    | Literal { lit; origin = Some id } ->
+        (Const { id; value = lit }, None) :: acc
     | Literal _ | NbCategory _ | NbAnomalies | NbDiscordances | NbInformatives
     | NbBloquantes ->
         acc

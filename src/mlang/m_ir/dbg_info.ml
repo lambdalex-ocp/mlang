@@ -3,8 +3,7 @@ module Origin = struct
 
   type t = { filename : string; line : int; code_orig : code }
 
-  let make filename line code_orig = {filename; line; code_orig}
-
+  let make filename line code_orig = { filename; line; code_orig }
 end
 
 module Info = struct
@@ -26,9 +25,13 @@ module Graph = Graph.Persistent.Digraph.Concrete (struct
   let hash = Hashtbl.hash
 end)
 
-type t = { graph : Graph.t; info : Info.t StrMap.t }
+type t = {
+  graph : Graph.t;
+  info : Info.t StrMap.t;
+  consts : Com.literal StrMap.t;
+}
 
-let empty = { graph = Graph.empty; info = StrMap.empty }
+let empty = { graph = Graph.empty; info = StrMap.empty; consts = StrMap.empty }
 
 let to_json (fmt : Format.formatter) info : unit =
   let open Format in
@@ -101,13 +104,12 @@ let to_json (fmt : Format.formatter) info : unit =
         | Target s -> Format.asprintf "target-%s" s
       in
       Format.asprintf
-        {|, "origin": {"code_orig": "%s", "file": "%s", "line": %d }|}
-        code_orig origin.filename origin.line
+        {|, "origin": {"code_orig": "%s", "file": "%s", "line": %d }|} code_orig
+        origin.filename origin.line
     in
     Format.fprintf fmt
-      {|%s"%s": {"def": "%a", "value": "%a", "scope": "%s" %s %s}|}
-      !delim var_name pp_opt def Com.format_literal vval scope rule_id
-      tgv_details;
+      {|%s"%s": {"def": "%a", "value": "%a", "scope": "%s" %s %s}|} !delim
+      var_name pp_opt def Com.format_literal vval scope rule_id tgv_details;
     delim := ","
   in
   Format.fprintf fmt "],@.";
@@ -115,6 +117,12 @@ let to_json (fmt : Format.formatter) info : unit =
   delim := "";
   Format.fprintf fmt {|"info": {@.|};
   StrMap.iter print_info info.info;
+  let print_const id value =
+    Format.fprintf fmt {|%s@."%s": {"value": "%a", "kind": "const"}|} !delim id
+      Com.format_literal value;
+    delim := ","
+  in
+  StrMap.iter print_const info.consts;
   Format.fprintf fmt "}}@."
 
 let write_json_file filename info =
