@@ -92,7 +92,7 @@ let parse_literal loc (s : string) : Com.literal =
   with Failure _ -> E.raise_spanned_error "invalid literal" (mk_position loc)
 
 let parse_atom loc (s : string) : Com.m_var_name Com.atom =
-  try Com.AtomLiteral (Com.Float (float_of_string s))
+  try Com.mk_atomlit (Com.Float (float_of_string s))
   with Failure _ ->
     Com.AtomVar (Pos.mark (parse_variable loc s) (mk_position loc))
 
