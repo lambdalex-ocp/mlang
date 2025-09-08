@@ -335,8 +335,8 @@ let rec expand_variable (const_map : const_context) (loop_map : loop_context)
   match Pos.unmark m_var with
   | Com.Normal name -> (
       match ConstMap.find_opt name const_map with
-      | Some (Pos.Mark (f, _)) ->
-          let atom = Com.mk_atomlit_from_const (Float f) name in
+      | Some (Pos.Mark (f, pos)) ->
+          let atom = Com.mk_atomlit_from_const (Float f) name pos in
           Pos.same atom m_var
       | None -> Pos.same (Com.AtomVar m_var) m_var)
   | Com.Generic gen_name ->

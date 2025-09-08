@@ -212,7 +212,9 @@ type verif_domain = verif_domain_data domain
 
 type literal = Float of float | Undefined
 
-type literal_with_orig = { lit : literal; origin : string option }
+type origin = string Pos.marked option
+
+type literal_with_orig = { lit : literal; origin : origin }
 
 (** Unary operators *)
 type unop = Not | Minus
@@ -318,7 +320,7 @@ and 'v expression =
 
 and 'v m_expression = 'v expression Pos.marked
 
-type const = { id : string; value : literal }
+type const = { id : string; value : literal; pos : Pos.t }
 
 type 'v dep = V of 'v | Const of const
 
@@ -327,14 +329,14 @@ val get_used_variables : 'v expression -> ('v dep * 'v expression option) list
 val mk_atomlit : literal -> 'v atom
 (** [mk_atomtit lit] makes a Literal expression with no origin *)
 
-val mk_atomlit_from_const : literal -> string -> 'v atom
+val mk_atomlit_from_const : literal -> string -> Pos.t -> 'v atom
 (** [mk_atomlit_from_const] makes a Literal expression with
     the name of the const as origin *)
 
 val mk_lit : literal -> 'v expression
 (** [mk_lit lit] makes a Literal expression with no origin *)
 
-val mk_lit_from_const : literal -> string -> 'v expression
+val mk_lit_from_const : literal -> string -> Pos.t -> 'v expression
 (** [mk_lit_from_const] makes a Literal expression with
     the name of the const as origin *)
 

@@ -1,9 +1,22 @@
 module Origin = struct
-  type code = Rule of int | Declared | Input | Target of string
+  type code = Rule of int | Declared | Input | Target of string | Const
 
   type t = { filename : string; line : int; code_orig : code }
 
   let make filename line code_orig = { filename; line; code_orig }
+
+  let to_json origin =
+    let code_orig =
+      match origin.code_orig with
+      | Rule i -> Format.asprintf "%d" i
+      | Input -> "input"
+      | Declared -> "Declared"
+      | Target s -> Format.asprintf "target-%s" s
+      | Const -> "const"
+    in
+    Format.asprintf
+      {|, "origin": {"code_orig": "%s", "file": "%s", "line": %d }|} code_orig
+      origin.filename origin.line
 end
 
 module Info = struct
@@ -25,17 +38,22 @@ module Graph = Graph.Persistent.Digraph.Concrete (struct
   let hash = Hashtbl.hash
 end)
 
-type t = {
-  graph : Graph.t;
-  info : Info.t StrMap.t;
-  consts : Com.literal StrMap.t;
-}
+module Const = struct
+  type t = { value : Com.literal; origin : Origin.t }
+
+  let make value fname line =
+    let origin = Origin.make fname line Const in
+    { value; origin }
+end
+
+type t = { graph : Graph.t; info : Info.t StrMap.t; consts : Const.t StrMap.t }
 
 let empty = { graph = Graph.empty; info = StrMap.empty; consts = StrMap.empty }
 
 let to_json (fmt : Format.formatter) info : unit =
   let open Format in
   let open Info in
+  let open Const in
   let delim = ref "" in
   Format.fprintf fmt "{\"graph\":[";
   let pp_vertex v =
@@ -95,21 +113,10 @@ let to_json (fmt : Format.formatter) info : unit =
     let pp_string fmt s = fprintf fmt "%s" s in
     let pp_none fmt () = fprintf fmt "" in
     let pp_opt = pp_print_option ~none:pp_none pp_string in
-    let rule_id =
-      let code_orig =
-        match origin.code_orig with
-        | Rule i -> Format.asprintf "%d" i
-        | Input -> "input"
-        | Declared -> "declaration"
-        | Target s -> Format.asprintf "target-%s" s
-      in
-      Format.asprintf
-        {|, "origin": {"code_orig": "%s", "file": "%s", "line": %d }|} code_orig
-        origin.filename origin.line
-    in
+    let origin = Origin.to_json origin in
     Format.fprintf fmt
       {|%s"%s": {"def": "%a", "value": "%a", "scope": "%s" %s %s}|} !delim
-      var_name pp_opt def Com.format_literal vval scope rule_id tgv_details;
+      var_name pp_opt def Com.format_literal vval scope origin tgv_details;
     delim := ","
   in
   Format.fprintf fmt "],@.";
@@ -117,9 +124,10 @@ let to_json (fmt : Format.formatter) info : unit =
   delim := "";
   Format.fprintf fmt {|"info": {@.|};
   StrMap.iter print_info info.info;
-  let print_const id value =
-    Format.fprintf fmt {|%s@."%s": {"value": "%a", "kind": "const"}|} !delim id
-      Com.format_literal value;
+  let print_const id const =
+    let origin = Origin.to_json const.origin in
+    Format.fprintf fmt {|%s@."%s": {"value": "%a", "kind": "const" %s}|} !delim
+      id Com.format_literal const.value origin;
     delim := ","
   in
   StrMap.iter print_const info.consts;
