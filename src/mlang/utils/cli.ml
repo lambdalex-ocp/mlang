@@ -23,6 +23,7 @@
 (** The command line interface is declared using {!module Cmdliner} *)
 
 open Cmdliner
+open Config
 
 let files =
   Arg.(
@@ -239,79 +240,6 @@ let info =
       | None -> "n/a"
       | Some v -> Build_info.V1.Version.to_string v)
     ~doc ~exits ~man
-
-type value_sort =
-  | RegularFloat
-  | MPFR of int (* bitsize of the floats *)
-  | BigInt of int (* precision of the fixed point *)
-  | Interval
-  | Rational
-
-type round_ops = RODefault | ROMulti | ROMainframe of int
-(* size of type long, either 32 or 64 *)
-
-type backend = Dgfip_c | UnknownBackend
-
-type execution_mode =
-  | SingleTest of string
-  | MultipleTests of string
-  | Extraction
-
-type files = NonEmpty of string list
-
-let get_files = function NonEmpty l -> l
-
-(* This feels weird to put here, but by construction it should not happen.*)
-let source_files : files ref = ref (NonEmpty [])
-
-let application_names : string list ref = ref []
-
-let without_dgfip_m = ref false
-
-let dbg_graph_file : string ref = ref "dbg_graph.dot"
-
-let verify_flag = ref false
-
-let debug_flag = ref false
-
-let var_info_flag = ref false
-
-let var_info_debug = ref []
-
-let warning_flag = ref true
-
-let no_print_cycles_flag = ref false
-
-let display_time = ref false
-
-let output_file = ref ""
-
-let optimize_unsafe_float = ref false
-
-let m_clean_calls = ref false
-
-let value_sort = ref RegularFloat
-
-let round_ops = ref RODefault
-
-let backend = ref UnknownBackend
-
-let dgfip_test_filter = ref false
-
-let mpp_function = ref ""
-
-let dgfip_flags = ref Dgfip_options.default_flags
-
-let execution_mode = ref Extraction
-
-(* Default value for the epsilon slack when comparing things in the
-   interpreter *)
-let comparison_error_margin = ref 0.000001
-
-let income_year = ref 0
-
-let dbgraph_var_focus = ref None
-
 let set_all_arg_refs (files_ : files) applications_ (without_dgfip_m_ : bool)
     (debug_ : bool) (var_info_debug_ : string list) (display_time_ : bool)
     (dbg_graph_file_ : string) (no_print_cycles_ : bool)

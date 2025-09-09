@@ -24,3 +24,8 @@
   (:standard
    (:include linking-flags-mlang.sexp)))
  (libraries mlang))
+
+(executable
+  (name js_main)
+  (modes js)
+  (libraries m_ir js_of_ocaml-lwt))

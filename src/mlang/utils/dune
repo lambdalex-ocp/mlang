@@ -1,0 +1,8 @@
+(include_subdirs no)
+
+(library
+  (name utils)
+  (package mlang)
+  (modules strSet setExt pos pp mapExt strMap setSetExt intSet
+           errors intMap config printer)
+  (libraries cmdliner ANSITerminal dune-build-info))

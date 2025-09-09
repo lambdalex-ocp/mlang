@@ -1,0 +1,10 @@
+(include_subdirs no)
+
+(env
+  (_
+    (flags (:standard -open Utils))))
+
+(library
+  (name m_ir)
+  (package mlang)
+  (libraries utils ocamlgraph gmp re))

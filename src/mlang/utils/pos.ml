@@ -147,8 +147,6 @@ let indent_number (s : string) : int =
     aux 0
   with Invalid_argument _ -> String.length s
 
-let last_ic = ref None
-
 (**)
 let extract_text_exact_loc (pos : t) file : string option =
   let sofst = get_start_ofst pos in
