@@ -23,7 +23,7 @@
  (flags
   (:standard
    (:include linking-flags-mlang.sexp)))
- (libraries mlang))
+ (libraries mlang printer_cli))
 
 (executable
   (name js_main)

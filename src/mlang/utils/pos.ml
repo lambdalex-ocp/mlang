@@ -167,11 +167,6 @@ let extract_text_exact_loc (pos : t) file : string option =
   let read file =
     let str = String.sub file sofst len in
     Some (replace_newline str)
-    (* In_channel.seek ic (Int64.of_int sofst); *)
-    (* In_channel.really_input ic buf 0 len *)
-    (* |> Option.map (fun () -> *)
-    (*        replace_newline buf |> *)
-    (*        Bytes.to_string) *)
   in
   match file with None -> None | Some file -> read file
 

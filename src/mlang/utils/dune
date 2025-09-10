@@ -4,5 +4,11 @@
   (name utils)
   (package mlang)
   (modules strSet setExt pos pp mapExt strMap setSetExt intSet
-           errors intMap config printer)
-  (libraries cmdliner ANSITerminal dune-build-info))
+           errors intMap config cli dgfip_options)
+  (libraries cmdliner ANSITerminal dune-build-info threads))
+;
+; (library
+;   (name cli)
+;   (package mlang)
+;   (modules cli)
+;   (virtual_modules cli))
