@@ -193,3 +193,8 @@ val create_progress_bar : string -> (string -> unit) * (string -> unit)
 (** Returns two functions: the first one, [current_progress], has to be called
     during the progress loop and the other one, [finish], has to be called at
     the end of the progressive task. *)
+
+val retrieve_loc_text : Pos.t -> string
+(** Given a source code position, retrieves the content of the code by acessing
+    the file and reading its text. This then adds pretty printing for error
+    showing. *)

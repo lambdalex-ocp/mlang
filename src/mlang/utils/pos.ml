@@ -15,6 +15,8 @@
 
 (** {1 Source code position} *)
 
+exception ConflictingFilenames of string * string
+
 type ofst = { sofst : int; eofst : int }
 
 let make_ofst sofst eofst = { sofst; eofst }
@@ -32,9 +34,7 @@ let make (f : string) (loc : Lexing.position * Lexing.position) (ofst : ofst) =
 
 let make_between (p1 : t) (p2 : t) : t =
   if p1.pos_filename <> p2.pos_filename then begin
-    Cli.error_print "Conflicting position filenames: %s <> %s" p1.pos_filename
-      p2.pos_filename;
-    failwith "Pos error"
+    raise @@ ConflictingFilenames (p1.pos_filename, p2.pos_filename)
   end
   else
     let b1, e1 = p1.pos_loc in

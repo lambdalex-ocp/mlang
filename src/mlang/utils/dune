@@ -4,11 +4,12 @@
   (name utils)
   (package mlang)
   (modules strSet setExt pos pp mapExt strMap setSetExt intSet
-           errors intMap config cli dgfip_options dgfip_m file)
+           errors intMap config cli dgfip_options dgfip_m file sorting
+           charMap strings topologicalSorting)
   (libraries cmdliner ANSITerminal dune-build-info threads))
 ;
 ; (library
-;   (name cli)
+;   (name platform)
 ;   (package mlang)
-;   (modules cli)
-;   (virtual_modules cli))
+;   (modules cli file)
+;   (virtual_modules cli file))

@@ -73,9 +73,3 @@ val get_start_ofst : t -> int
 val get_end_ofst : t -> int
 (** Returns the ending offset of the pos [t]. *)
 
-val indent_number : string -> int
-
-val retrieve_loc_text : t -> string
-(** Given a source code position, retrieves the content of the code by acessing
-    the file and reading its text. This then adds pretty printing for error
-    showing. *)

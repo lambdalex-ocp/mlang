@@ -567,7 +567,7 @@ struct
               let ic_opt = StrMap.find_opt filename ctx.ctx_ics in
               match StrMap.find_opt name dbg_info.info with
               | None | Some { def = None; _ } ->
-                  Pos.extract_text_exact_loc pos ic_opt
+                  File.extract_text_exact_loc pos ic_opt
               | Some { def = Some _ as def; _ } -> def
             in
             let rule_id =

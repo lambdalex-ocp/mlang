@@ -1,11 +1,12 @@
 (include_subdirs unqualified)
-;
-; (env
-;   (_
-;     (flags (:standard -open Utils ))))
-;
+
+(env
+  (_
+    (flags (:standard -open Utils))))
+
 (library
  (public_name mlang)
+ (flags (:standard -open Utils -open M_ir))
  (libraries re ANSITerminal parmap cmdliner threads dune-build-info num gmp
    menhirLib ocamlgraph m_ir utils))
 

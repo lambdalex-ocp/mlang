@@ -261,7 +261,6 @@ type files = NonEmpty of string list
 
 (* Flags inherited from the old compiler *)
 
-
 let get_files = function NonEmpty l -> l
 
 (* This feels weird to put here, but by construction it should not happen.*)
@@ -314,7 +313,6 @@ let comparison_error_margin = ref 0.000001
 let income_year = ref 0
 
 let dbgraph_var_focus = ref None
-
 
 let set_all_arg_refs (files_ : files) applications_ (without_dgfip_m_ : bool)
     (debug_ : bool) (var_info_debug_ : string list) (display_time_ : bool)
@@ -514,13 +512,14 @@ let indent_number (s : string) : int =
     aux 0
   with Invalid_argument _ -> String.length s
 
-
 let format_matched_line pos (line : string) (line_no : int) : string =
   let line_indent = indent_number line in
   let error_indicator_style = [ ANSITerminal.red; ANSITerminal.Bold ] in
   let sline = Pos.get_start_line pos in
   let eline = Pos.get_end_line pos in
-  let line_start_col = if line_no = sline then Pos.get_start_column pos else 1 in
+  let line_start_col =
+    if line_no = sline then Pos.get_start_column pos else 1
+  in
   let line_end_col =
     if line_no = eline then Pos.get_end_column pos else String.length line + 1
   in
@@ -552,7 +551,9 @@ let format_lines pos lines =
   let eline = Pos.get_end_line pos in
   let blue_style = [ ANSITerminal.Bold; ANSITerminal.blue ] in
   let spaces = int_of_float (log10 (float_of_int eline)) + 1 in
-  let lines = List.mapi (fun i line -> format_matched_line pos line (i + sline)) lines in
+  let lines =
+    List.mapi (fun i line -> format_matched_line pos line (i + sline)) lines
+  in
   format_with_style blue_style "%*s--> %s\n%s" spaces "" filename
     (add_prefix_to_each_line
        (Printf.sprintf "\n%s" (String.concat "\n" lines))
@@ -579,6 +580,12 @@ let retrieve_loc_text (pos : Pos.t) : string =
   let filename = Pos.get_file pos in
   if filename = "" then "No position information"
   else
-    let get_lines = File.open_file_for_text_extraction pos in
+    let get_lines =
+      match File.open_file_for_text_extraction pos with
+      | exception Sys_error _ ->
+          error_print "File not found for displaying position : \"%s\"" filename;
+          failwith "Pos error"
+      | get_lines -> get_lines
+    in
     let lines = get_lines 1 in
     format_lines pos lines

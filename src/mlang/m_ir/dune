@@ -1,10 +1,7 @@
 (include_subdirs no)
 
-(env
-  (_
-    (flags (:standard -open Utils))))
-
 (library
   (name m_ir)
+  (modules com dbg_info format_mir mir_interpreter mir mir_number mir_roundops)
   (package mlang)
   (libraries utils ocamlgraph gmp re))
