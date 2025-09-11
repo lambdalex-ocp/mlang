@@ -4,7 +4,7 @@
   (name utils)
   (package mlang)
   (modules strSet setExt pos pp mapExt strMap setSetExt intSet
-           errors intMap config cli dgfip_options)
+           errors intMap config cli dgfip_options dgfip_m file)
   (libraries cmdliner ANSITerminal dune-build-info threads))
 ;
 ; (library

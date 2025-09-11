@@ -507,3 +507,78 @@ let result_print kont =
   Format.kasprintf
     (fun str -> Format.printf "%a%s@." (fun _ -> result_marker) () str)
     kont
+
+let indent_number (s : string) : int =
+  try
+    let rec aux (i : int) = if s.[i] = ' ' then aux (i + 1) else i in
+    aux 0
+  with Invalid_argument _ -> String.length s
+
+
+let format_matched_line pos (line : string) (line_no : int) : string =
+  let line_indent = indent_number line in
+  let error_indicator_style = [ ANSITerminal.red; ANSITerminal.Bold ] in
+  let sline = Pos.get_start_line pos in
+  let eline = Pos.get_end_line pos in
+  let line_start_col = if line_no = sline then Pos.get_start_column pos else 1 in
+  let line_end_col =
+    if line_no = eline then Pos.get_end_column pos else String.length line + 1
+  in
+  let line_length = String.length line + 1 in
+  line
+  ^
+  if line_no >= sline && line_no <= eline then
+    "\n"
+    ^
+    if line_no = sline && line_no = eline then
+      format_with_style error_indicator_style "%*s" (line_end_col - 1)
+        (String.make (line_end_col - line_start_col) '^')
+    else if line_no = sline && line_no <> eline then
+      format_with_style error_indicator_style "%*s" (line_length - 1)
+        (String.make (line_length - line_start_col) '^')
+    else if line_no <> sline && line_no <> eline then
+      format_with_style error_indicator_style "%*s%s" line_indent ""
+        (String.make (line_length - line_indent) '^')
+    else if line_no <> sline && line_no = eline then
+      format_with_style error_indicator_style "%*s%*s" line_indent ""
+        (line_end_col - 1 - line_indent)
+        (String.make (line_end_col - line_indent) '^')
+    else assert false (* should not happen *)
+  else ""
+
+let format_lines pos lines =
+  let filename = Pos.get_file pos in
+  let sline = Pos.get_start_line pos in
+  let eline = Pos.get_end_line pos in
+  let blue_style = [ ANSITerminal.Bold; ANSITerminal.blue ] in
+  let spaces = int_of_float (log10 (float_of_int eline)) + 1 in
+  let lines = List.mapi (fun i line -> format_matched_line pos line (i + sline)) lines in
+  format_with_style blue_style "%*s--> %s\n%s" spaces "" filename
+    (add_prefix_to_each_line
+       (Printf.sprintf "\n%s" (String.concat "\n" lines))
+       (fun i ->
+         let cur_line = sline + i - 1 in
+         if
+           cur_line >= sline
+           && cur_line <= sline + (2 * (eline - sline))
+           && cur_line mod 2 = sline mod 2
+         then
+           format_with_style blue_style "%*d | " spaces
+             (sline + ((cur_line - sline) / 2))
+         else if cur_line >= sline && cur_line < sline then
+           format_with_style blue_style "%*d | " spaces cur_line
+         else if
+           cur_line <= sline + (2 * (eline - sline)) + 1
+           && cur_line > sline + (2 * (eline - sline)) + 1
+         then
+           format_with_style blue_style "%*d | " spaces
+             (cur_line - (eline - sline + 1))
+         else format_with_style blue_style "%*s | " spaces ""))
+
+let retrieve_loc_text (pos : Pos.t) : string =
+  let filename = Pos.get_file pos in
+  if filename = "" then "No position information"
+  else
+    let get_lines = File.open_file_for_text_extraction pos in
+    let lines = get_lines 1 in
+    format_lines pos lines

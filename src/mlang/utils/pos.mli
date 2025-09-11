@@ -67,11 +67,13 @@ val get_end_column : t -> int
 
 val get_file : t -> string
 
-val indent_number : string -> int
+val get_start_ofst : t -> int
+(** Returns the starting offset of the pos [t]. *)
 
-val extract_text_exact_loc : t -> string option -> string option
-(** Given a position, extract the lines specified in the position
-    from the specified file. *)
+val get_end_ofst : t -> int
+(** Returns the ending offset of the pos [t]. *)
+
+val indent_number : string -> int
 
 val retrieve_loc_text : t -> string
 (** Given a source code position, retrieves the content of the code by acessing
