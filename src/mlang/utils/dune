@@ -3,13 +3,20 @@
 (library
   (name utils)
   (package mlang)
-  (modules strSet setExt pos pp mapExt strMap setSetExt intSet
-           errors intMap config cli dgfip_options dgfip_m file sorting
+  (modules strSet setExt pp mapExt strMap setSetExt intSet
+           errors intMap config dgfip_m sorting
            charMap strings topologicalSorting)
-  (libraries cmdliner ANSITerminal dune-build-info threads))
-;
-; (library
-;   (name platform)
-;   (package mlang)
-;   (modules cli file)
-;   (virtual_modules cli file))
+  (libraries cmdliner ANSITerminal dune-build-info threads platform))
+
+(library
+  (name utils_common)
+  (package mlang)
+  (modules pos))
+
+(library
+  (name platform)
+  (package mlang)
+  (flags(:standard -open Utils_common))
+  (modules cli file dgfip_options)
+  (libraries utils_common)
+  (virtual_modules cli file))

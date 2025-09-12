@@ -23,7 +23,7 @@
  (flags
   (:standard
    (:include linking-flags-mlang.sexp)))
- (libraries mlang))
+ (libraries mlang platform_unix))
 
 ; (executable
 ;   (name js_main)

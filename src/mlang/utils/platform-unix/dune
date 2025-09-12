@@ -1,0 +1,5 @@
+(library
+  (name platform_unix)
+  (modules cli file dgfip_options)
+  (libraries ANSITerminal cmdliner)
+  (implements platform))

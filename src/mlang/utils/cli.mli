@@ -18,6 +18,19 @@
 
 (**{2 Command line arguments parsing}*)
 
+module Cmdliner : sig
+  module Term : sig
+    type 'a t
+  end
+  module Cmd : sig
+    type info
+  end
+end
+
+module ANSITerminal : sig
+  type style
+end
+
 val mlang_t :
   (string list ->
   string list ->
