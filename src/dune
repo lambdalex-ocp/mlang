@@ -25,7 +25,7 @@
    (:include linking-flags-mlang.sexp)))
  (libraries mlang platform_unix))
 
-; (executable
-;   (name js_main)
-;   (modes js)
-;   (libraries m_ir js_of_ocaml-lwt))
+(executable
+  (name js_main)
+  (modes js)
+  (libraries m_ir js_of_ocaml-lwt platform_js))

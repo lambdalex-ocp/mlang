@@ -22,8 +22,26 @@ module Cmdliner : sig
   module Term : sig
     type 'a t
   end
+
   module Cmd : sig
+    module Exit : sig
+      type code = int
+    end
     type info
+
+    type 'a t
+
+    val eval :
+    ?help:Format.formatter ->
+    ?err:Format.formatter ->
+    ?catch:bool ->
+    ?env:(string -> string option) ->
+    ?argv:string array ->
+    ?term_err:Exit.code ->
+    unit t ->
+    Exit.code 
+
+    val v : info -> 'a Term.t -> 'a t
   end
 end
 

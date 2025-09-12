@@ -3,20 +3,21 @@
 (library
   (name utils)
   (package mlang)
+  (flags (:standard -open Utils_common -open Platform))
   (modules strSet setExt pp mapExt strMap setSetExt intSet
-           errors intMap config dgfip_m sorting
-           charMap strings topologicalSorting)
-  (libraries cmdliner ANSITerminal dune-build-info threads platform))
+           errors intMap config sorting
+           charMap strings topologicalSorting utils)
+  (libraries dune-build-info platform utils_common))
 
 (library
   (name utils_common)
   (package mlang)
-  (modules pos))
+  (modules pos dgfip_m))
 
 (library
   (name platform)
   (package mlang)
   (flags(:standard -open Utils_common))
   (modules cli file dgfip_options)
-  (libraries utils_common)
-  (virtual_modules cli file))
+  (libraries utils_common dune-build-info)
+  (virtual_modules cli file dgfip_options))

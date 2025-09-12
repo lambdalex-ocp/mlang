@@ -1,5 +1,8 @@
+(include_subdirs no)
+
 (library
   (name platform_unix)
   (modules cli file dgfip_options)
-  (libraries ANSITerminal cmdliner)
+  (flags (:standard -open Utils_common))
+  (libraries ANSITerminal cmdliner threads utils_common)
   (implements platform))

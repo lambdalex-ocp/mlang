@@ -283,6 +283,6 @@ let driver () =
 
 let main () =
   let opt_code =
-    Cmdliner.Cmd.eval @@ Cmdliner.Cmd.v Cli.info (Cli.mlang_t set_opts)
+    Cli.Cmdliner.Cmd.eval @@ Cli.Cmdliner.Cmd.v Cli.info (Cli.mlang_t set_opts)
   in
   match opt_code with 0 -> driver () | i -> exit i

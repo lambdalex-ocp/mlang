@@ -24,6 +24,11 @@
 
 open Cmdliner
 
+module Cmdliner = Cmdliner
+module Term = Cmdliner.Term
+module ANSITerminal = ANSITerminal
+
+
 let files =
   Arg.(
     non_empty & pos_all file []

@@ -3,7 +3,7 @@
 (library
  (public_name mlang)
  (flags (:standard -open Utils -open M_ir))
- (libraries re ANSITerminal parmap cmdliner threads dune-build-info num gmp
+ (libraries re ANSITerminal parmap dune-build-info num gmp
    menhirLib ocamlgraph m_ir utils))
 
 (documentation
