@@ -1,3 +1,5 @@
+(* We made this file cause we want Utils_common to be included in Utils *)
+
 include Utils_common
 module CharMap = CharMap
 module Cli = Cli
@@ -13,7 +15,6 @@ module IntSetMap = IntSetMap
 module MapExt = MapExt
 module Pos = Pos
 module Pp = Pp
-module Printer = Printer
 module SetExt = SetExt
 module SetSetExt = SetSetExt
 module Sorting = Sorting
