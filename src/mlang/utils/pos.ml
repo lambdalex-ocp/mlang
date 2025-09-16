@@ -140,4 +140,3 @@ let get_end_column (pos : t) : int =
   e.Lexing.pos_cnum - e.Lexing.pos_bol + 1
 
 let get_file (pos : t) : string = (fst pos.pos_loc).Lexing.pos_fname
-

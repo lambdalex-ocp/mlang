@@ -26,7 +26,8 @@
  (libraries mlang platform_unix))
 
 (executable
-  (name js_main)
-  (modes js)
-  (preprocess (pps js_of_ocaml-ppx))
-  (libraries m_ir js_of_ocaml-lwt platform_js))
+ (name js_main)
+ (modes js)
+ (preprocess
+  (pps js_of_ocaml-ppx))
+ (libraries m_ir mlang js_of_ocaml-lwt platform_js zarith_stubs_js))

@@ -1,8 +1,9 @@
 (include_subdirs no)
 
 (library
-  (name platform_js)
-  (modules cli file dgfip_options)
-  (flags (:standard -open Utils_common))
-  (libraries utils_common)
-  (implements platform))
+ (name platform_js)
+ (modules cli file dgfip_options)
+ (flags
+  (:standard -open Utils_common))
+ (libraries utils_common)
+ (implements platform))

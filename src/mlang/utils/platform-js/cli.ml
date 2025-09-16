@@ -13,16 +13,12 @@ module Cmdliner = struct
     end
 
     type info = unit
+
     type 'a t = unit
 
-    let eval
-        ?help:(_ = Format.std_formatter)
-        ?err:(_ = Format.std_formatter)
-        ?catch:(_ = true)
-        ?env:(_ = fun _ -> None)
-        ?argv:(_ = Sys.argv)
-        ?term_err:(_ = 1)
-        (_ : unit t) : Exit.code =
+    let eval ?help:(_ = Format.std_formatter) ?err:(_ = Format.std_formatter)
+        ?catch:(_ = true) ?env:(_ = fun _ -> None) ?argv:(_ = Sys.argv)
+        ?term_err:(_ = 1) (_ : unit t) : Exit.code =
       assert false
 
     let v (_ : info) (_ : 'a Term.t) : 'a t = assert false
@@ -63,27 +59,11 @@ let mlang_t
 let info : Cmdliner.Cmd.info = ()
 
 (**{2 Flags and parameters}*)
-let set_all_arg_refs
-    (_ : Config.files)
-    (_ : string list)
-    (_ : bool)
-    (_ : bool)
-    (_ : string list)
-    (_ : bool)
-    (_ : string)
-    (_ : bool)
-    (_ : string option)
-    (_ : bool)
-    (_ : bool)
-    (_ : float option)
-    (_ : int)
-    (_ : Config.value_sort)
-    (_ : Config.round_ops)
-    (_ : Config.backend)
-    (_ : bool)
-    (_ : string)
-    (_ : Config.Dgfip_options.flags)
-    (_ : Config.execution_mode)
+let set_all_arg_refs (_ : Config.files) (_ : string list) (_ : bool) (_ : bool)
+    (_ : string list) (_ : bool) (_ : string) (_ : bool) (_ : string option)
+    (_ : bool) (_ : bool) (_ : float option) (_ : int) (_ : Config.value_sort)
+    (_ : Config.round_ops) (_ : Config.backend) (_ : bool) (_ : string)
+    (_ : Config.Dgfip_options.flags) (_ : Config.execution_mode)
     (_ : string option) : unit =
   assert false
 
@@ -92,16 +72,14 @@ let add_prefix_to_each_line (_ : string) (_ : int -> string) : string =
 
 (**{2 Printers}*)
 
-let format_with_style
-    (_ : ANSITerminal.style list)
+let format_with_style (_ : ANSITerminal.style list)
     (_ : ('a, unit, string) format) : 'a =
   assert false
 
 let var_info_print (_ : ('a, Format.formatter, unit, unit) format4) : 'a =
   assert false
 
-let debug_print
-    ?(endline = "\n")
+let debug_print ?(endline = "\n")
     (_ : ('a, Format.formatter, unit, unit) format4) : 'a =
   assert false
 

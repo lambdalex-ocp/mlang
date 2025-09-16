@@ -1379,7 +1379,8 @@ module RatMfInterp =
     (Mir_number.RationalNumber)
     (Mir_roundops.MainframeRoundOps (MainframeLongSize))
 
-let get_interp (sort : Config.value_sort) (roundops : Config.round_ops) : (module S) =
+let get_interp (sort : Config.value_sort) (roundops : Config.round_ops) :
+    (module S) =
   match (sort, roundops) with
   | RegularFloat, RODefault -> (module FloatDefInterp)
   | RegularFloat, ROMulti -> (module FloatMultInterp)
@@ -1397,7 +1398,8 @@ let get_interp (sort : Config.value_sort) (roundops : Config.round_ops) : (modul
   | Rational, ROMulti -> (module RatMultInterp)
   | Rational, ROMainframe _ -> (module RatMfInterp)
 
-let prepare_interp (sort : Config.value_sort) (roundops : Config.round_ops) : unit =
+let prepare_interp (sort : Config.value_sort) (roundops : Config.round_ops) :
+    unit =
   begin
     match sort with
     | MPFR prec -> Mpfr.set_default_prec prec

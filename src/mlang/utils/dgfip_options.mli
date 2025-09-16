@@ -22,4 +22,6 @@ val handler :
   Config.Dgfip_options.flags
 
 val process_dgfip_options :
-  application_names:string list -> string list -> Config.Dgfip_options.flags option
+  application_names:string list ->
+  string list ->
+  Config.Dgfip_options.flags option

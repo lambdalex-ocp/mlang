@@ -8,6 +8,7 @@
 (executable
  (name irj_checker)
  (package irj_checker)
- (flags (:standard -open Utils))
+ (flags
+  (:standard -open Utils))
  (public_name irj_checker)
  (libraries mlang cmdliner dune-build-info platform_unix utils))

@@ -140,27 +140,16 @@ module RegularFloatNumber : NumberInterface = struct
   let is_zero x = x = 0.
 end
 
-let mpfr_abs (x : Mpfrf.t) : Mpfrf.t =
-  let out = Mpfr.init2 (Mpfr.get_prec x) in
-  ignore (Mpfr.abs out x Mpfr.Near);
-  Mpfrf.of_mpfr out
+let mpfr_abs (x : Q.t) : Q.t = Q.abs x
 
-let mpfr_floor (x : Mpfrf.t) : Mpfrf.t =
-  let out = Mpfr.init () in
-  ignore (Mpfr.floor out x);
-  Mpfrf.of_mpfr out
+let mpfr_floor x = Q.to_bigint x |> Q.of_bigint
 
-let mpfr_ceil (x : Mpfrf.t) : Mpfrf.t =
-  let out = Mpfr.init () in
-  ignore (Mpfr.ceil out x);
-  Mpfrf.of_mpfr out
+let mpfr_ceil x = Q.add x (Q.of_string "0.5") |> mpfr_floor
 
 module MPFRNumber : NumberInterface = struct
-  type t = Mpfrf.t
+  include Q
 
-  let rounding : Mpfr.round = Near
-
-  let format_t fmt f = Format.fprintf fmt "%a" Mpfrf.print f
+  let format_t fmt f = Format.fprintf fmt "%a" Q.pp_print f
 
   let format_prec_t _mi _ma fmt f = format_t fmt f
 
@@ -170,59 +159,55 @@ module MPFRNumber : NumberInterface = struct
 
   let ceil (x : t) : t = mpfr_ceil x
 
-  let of_int i = Mpfrf.of_int (Int64.to_int i) rounding
+  let of_int x = Q.of_int64 x
 
-  let to_int f = Int64.of_float (Mpfrf.to_float f)
+  let to_int = Q.to_int64
 
-  let of_float f = Mpfrf.of_float f rounding
+  let of_float_input _ f = Q.of_float f
 
-  let of_float_input _ f = Mpfrf.of_float f rounding
+  let zero () = Q.zero
 
-  let to_float f = Mpfrf.to_float ~round:rounding f
+  let one () = Q.one
 
-  let zero () = Mpfrf.of_int 0 rounding
+  let ( =. ) x y = Q.( = ) x y
 
-  let one () = Mpfrf.of_int 1 rounding
+  let ( >=. ) x y = Q.( >= ) x y
 
-  let ( =. ) x y = Mpfrf.cmp x y = 0
+  let ( >. ) x y = Q.( > ) x y
 
-  let ( >=. ) x y = Mpfrf.cmp x y >= 0
+  let ( <. ) x y = Q.( < ) x y
 
-  let ( >. ) x y = Mpfrf.cmp x y > 0
+  let ( <=. ) x y = Q.( <= ) x y
 
-  let ( <. ) x y = Mpfrf.cmp x y < 0
+  let ( +. ) x y = Q.( + ) x y
 
-  let ( <=. ) x y = Mpfrf.cmp x y <= 0
+  let ( -. ) x y = Q.( - ) x y
 
-  let ( +. ) x y = Mpfrf.add x y rounding
+  let ( /. ) x y = Q.div x y
 
-  let ( -. ) x y = Mpfrf.sub x y rounding
-
-  let ( /. ) x y = Mpfrf.div x y rounding
-
-  let ( *. ) x y = Mpfrf.mul x y rounding
+  let ( *. ) x y = Q.mul x y
 
   let ( %. ) x y =
     let d = x /. y in
     let n = if d >=. zero () then floor d else ceil d in
     x -. (n *. y)
 
-  let min x y = if x >. y then y else x
+  let min x y = Q.min x y
 
-  let max x y = if x >. y then x else y
+  let max x y = Q.max x y
 
   let is_zero x = x =. zero ()
 
-  let is_nan_or_inf x = not (Mpfrf.number_p x)
+  let is_nan_or_inf x = not (Q.is_real x)
 end
 
 module IntervalNumber : NumberInterface = struct
-  type t = { down : Mpfrf.t; up : Mpfrf.t }
+  type t = { down : Q.t; up : Q.t }
 
-  let v (x : Mpfrf.t) (y : Mpfrf.t) : t = { down = x; up = y }
+  let v (x : Q.t) (y : Q.t) : t = { down = x; up = y }
 
   let format_t fmt f =
-    Format.fprintf fmt "[%a;%a]" Mpfrf.print f.down Mpfrf.print f.up
+    Format.fprintf fmt "[%a;%a]" Q.pp_print f.down Q.pp_print f.up
 
   let format_prec_t _mi _ma fmt f = format_t fmt f
 
@@ -241,17 +226,20 @@ module IntervalNumber : NumberInterface = struct
     let iu = mpfr_ceil x.up in
     v id iu
 
-  let of_int i =
-    v (Mpfrf.of_int (Int64.to_int i) Down) (Mpfrf.of_int (Int64.to_int i) Up)
+  let of_int i = v (Q.of_int64 i) (Q.of_int64 i)
+  (* v (Mpfrf.of_int (Int64.to_int i) Down) (Mpfrf.of_int (Int64.to_int i) Up) *)
 
-  let of_float (f : float) = v (Mpfrf.of_float f Down) (Mpfrf.of_float f Up)
+  let of_float (f : float) =
+    (* v (Mpfrf.of_float f Down) (Mpfrf.of_float f Up) *)
+    v (Q.of_float f) (Q.of_float f)
 
   let of_float_input (_v : Com.Var.t) (f : float) =
-    v (Mpfrf.of_float f Down) (Mpfrf.of_float f Up)
+    v (Q.of_float f) (Q.of_float f)
+  (* v (Mpfrf.of_float f Down) (Mpfrf.of_float f Up) *)
 
   let to_float (f : t) : float =
-    let fd = Mpfrf.to_float ~round:Down f.down in
-    let fu = Mpfrf.to_float ~round:Up f.up in
+    let fd = Q.to_float f.down in
+    let fu = Q.to_float f.up in
     if fd = fu then fd
     else
       let prec_diff = fu -. fd in
@@ -264,13 +252,13 @@ module IntervalNumber : NumberInterface = struct
 
   let to_int (f : t) : Int64.t = Int64.of_float (to_float f)
 
-  let zero () = v (Mpfrf.of_int 0 Down) (Mpfrf.of_int 0 Up)
+  let zero () = v Q.zero Q.zero
 
-  let one () = v (Mpfrf.of_int 1 Down) (Mpfrf.of_int 1 Up)
+  let one () = v Q.one Q.one
 
   let ( =. ) x y =
-    let outd = Mpfrf.cmp x.down y.down = 0 in
-    let outu = Mpfrf.cmp x.up y.up = 0 in
+    let outd = Q.equal x.down y.down in
+    let outu = Q.equal x.up y.up in
     if outd = outu then outu
     else
       Errors.raise_error
@@ -278,8 +266,8 @@ module IntervalNumber : NumberInterface = struct
            format_t x format_t y)
 
   let ( >=. ) x y =
-    let outd = Mpfrf.cmp x.down y.down >= 0 in
-    let outu = Mpfrf.cmp x.up y.up >= 0 in
+    let outd = Q.geq x.down y.down in
+    let outu = Q.geq x.up y.up in
     if outd = outu then outu
     else
       Errors.raise_error
@@ -288,8 +276,8 @@ module IntervalNumber : NumberInterface = struct
            format_t y)
 
   let ( >. ) x y =
-    let outd = Mpfrf.cmp x.down y.down > 0 in
-    let outu = Mpfrf.cmp x.up y.up > 0 in
+    let outd = Q.gt x.down y.down in
+    let outu = Q.gt x.up y.up in
     if outd = outu then outu
     else
       Errors.raise_error
@@ -297,8 +285,8 @@ module IntervalNumber : NumberInterface = struct
            format_t x format_t y)
 
   let ( <. ) x y =
-    let outd = Mpfrf.cmp x.down y.down < 0 in
-    let outu = Mpfrf.cmp x.up y.up < 0 in
+    let outd = Q.lt x.down y.down in
+    let outu = Q.lt x.up y.up in
     if outd = outu then outu
     else
       Errors.raise_error
@@ -306,8 +294,8 @@ module IntervalNumber : NumberInterface = struct
            format_t x format_t y)
 
   let ( <=. ) x y =
-    let outd = Mpfrf.cmp x.down y.down <= 0 in
-    let outu = Mpfrf.cmp x.up y.up <= 0 in
+    let outd = Q.leq x.down y.down in
+    let outu = Q.leq x.up y.up in
     if outd = outu then outu
     else
       Errors.raise_error
@@ -315,13 +303,13 @@ module IntervalNumber : NumberInterface = struct
            "Tried to compare %a <= %a but got inconsistent results" format_t x
            format_t y)
 
-  let ( +. ) x y = v (Mpfrf.add x.down y.down Down) (Mpfrf.add x.up y.up Up)
+  let ( +. ) x y = v (Q.add x.down y.down) (Q.add x.up y.up)
 
-  let ( -. ) x y = v (Mpfrf.sub x.down y.down Down) (Mpfrf.sub x.up y.up Up)
+  let ( -. ) x y = v (Q.sub x.down y.down) (Q.sub x.up y.up)
 
-  let ( /. ) x y = v (Mpfrf.div x.down y.down Down) (Mpfrf.div x.up y.up Up)
+  let ( /. ) x y = v (Q.div x.down y.down) (Q.div x.up y.up)
 
-  let ( *. ) x y = v (Mpfrf.mul x.down y.down Down) (Mpfrf.mul x.up y.up Up)
+  let ( *. ) x y = v (Q.mul x.down y.down) (Q.mul x.up y.up)
 
   let ( %. ) x y =
     let d = x /. y in
@@ -334,7 +322,7 @@ module IntervalNumber : NumberInterface = struct
 
   let is_zero x = x =. zero ()
 
-  let is_nan_or_inf x = not (Mpfrf.number_p x.down && Mpfrf.number_p x.up)
+  let is_nan_or_inf x = not (Q.is_real x.down && Q.is_real x.up)
 end
 
 module RationalNumber : NumberInterface = struct

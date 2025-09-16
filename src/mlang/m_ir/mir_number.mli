@@ -72,8 +72,6 @@ end
 
 module RegularFloatNumber : NumberInterface
 
-val mpfr_floor : Mpfrf.t -> Mpfrf.t
-
 module MPFRNumber : NumberInterface
 
 module IntervalNumber : NumberInterface

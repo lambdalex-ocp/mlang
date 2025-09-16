@@ -154,4 +154,7 @@ val format_assign :
   Config.Dgfip_options.flags -> string -> Format.formatter -> t -> unit
 
 val format_set_vars :
-  Config.Dgfip_options.flags -> Format.formatter -> (dflag * string * t) list -> unit
+  Config.Dgfip_options.flags ->
+  Format.formatter ->
+  (dflag * string * t) list ->
+  unit

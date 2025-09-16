@@ -106,31 +106,32 @@ let handler ~(application_names : string list) (income_year : int)
     (cross_references : bool) : Config.Dgfip_options.flags =
   let has_iliad = List.mem "iliad" application_names in
   let has_pro = List.mem "pro" application_names in
-  Config.Dgfip_options.{
-    (* iliad, pro, (GP) *)
-    annee_revenu = income_year;
-    flg_correctif = not primitive_only;
-    flg_iliad =
-      ((iliad_pro && not cfir) || has_iliad) && not (Option.is_some batch);
-    flg_pro = (has_pro || iliad_pro) && not cfir;
-    flg_cfir = cfir && not iliad_pro;
-    flg_gcos = Option.is_some batch && (not iliad_pro) && not cfir;
-    flg_tri_ebcdic = (match batch with Some 1 -> true | _ -> false);
-    flg_short = short;
-    flg_register = register;
-    flg_optim_min_max = optim_min_max;
-    flg_extraction = extraction;
-    flg_genere_libelle_restituee = output_labels;
-    flg_controle_separe = separate_controls;
-    flg_controle_immediat = immediate_controls;
-    flg_overlays = overlays;
-    flg_colors = colored_output;
-    flg_ticket = ticket;
-    flg_trace = trace;
-    flg_debug = debug || trace;
-    nb_debug_c;
-    xflg = cross_references;
-  }
+  Config.Dgfip_options.
+    {
+      (* iliad, pro, (GP) *)
+      annee_revenu = income_year;
+      flg_correctif = not primitive_only;
+      flg_iliad =
+        ((iliad_pro && not cfir) || has_iliad) && not (Option.is_some batch);
+      flg_pro = (has_pro || iliad_pro) && not cfir;
+      flg_cfir = cfir && not iliad_pro;
+      flg_gcos = Option.is_some batch && (not iliad_pro) && not cfir;
+      flg_tri_ebcdic = (match batch with Some 1 -> true | _ -> false);
+      flg_short = short;
+      flg_register = register;
+      flg_optim_min_max = optim_min_max;
+      flg_extraction = extraction;
+      flg_genere_libelle_restituee = output_labels;
+      flg_controle_separe = separate_controls;
+      flg_controle_immediat = immediate_controls;
+      flg_overlays = overlays;
+      flg_colors = colored_output;
+      flg_ticket = ticket;
+      flg_trace = trace;
+      flg_debug = debug || trace;
+      nb_debug_c;
+      xflg = cross_references;
+    }
 
 let process_dgfip_options ~application_names options =
   let options = Array.of_list ("mlang" :: options) in

@@ -27,19 +27,20 @@ module Cmdliner : sig
     module Exit : sig
       type code = int
     end
+
     type info
 
     type 'a t
 
     val eval :
-    ?help:Format.formatter ->
-    ?err:Format.formatter ->
-    ?catch:bool ->
-    ?env:(string -> string option) ->
-    ?argv:string array ->
-    ?term_err:Exit.code ->
-    unit t ->
-    Exit.code 
+      ?help:Format.formatter ->
+      ?err:Format.formatter ->
+      ?catch:bool ->
+      ?env:(string -> string option) ->
+      ?argv:string array ->
+      ?term_err:Exit.code ->
+      unit t ->
+      Exit.code
 
     val v : info -> 'a Term.t -> 'a t
   end
@@ -78,7 +79,6 @@ val mlang_t :
 
 val info : Cmdliner.Cmd.info
 (** Command-line man page for --help *)
-
 
 val add_prefix_to_each_line : string -> (int -> string) -> string
 (** [add_prefix_to_each_line msg prefix] will print msg but each line with line

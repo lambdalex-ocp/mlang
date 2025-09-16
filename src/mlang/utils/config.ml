@@ -144,10 +144,10 @@ let set_all_arg_refs (files_ : files) applications_ (without_dgfip_m_ : bool)
     (dbg_graph_file_ : string) (no_print_cycles_ : bool)
     (output_file_ : string option) (optimize_unsafe_float_ : bool)
     (m_clean_calls_ : bool) (comparison_error_margin_ : float option)
-    (income_year_ : int) (value_sort_ : value_sort)
-    (round_ops_ : round_ops) (backend_ : backend) (dgfip_test_filter_ : bool)
-    (mpp_function_ : string) (dgfip_flags_ : Dgfip_options.flags)
-    (execution_mode_ : execution_mode) (dbgraph_var_focus_ : string option) =
+    (income_year_ : int) (value_sort_ : value_sort) (round_ops_ : round_ops)
+    (backend_ : backend) (dgfip_test_filter_ : bool) (mpp_function_ : string)
+    (dgfip_flags_ : Dgfip_options.flags) (execution_mode_ : execution_mode)
+    (dbgraph_var_focus_ : string option) =
   source_files := files_;
   application_names := applications_;
   without_dgfip_m := without_dgfip_m_;
@@ -160,7 +160,7 @@ let set_all_arg_refs (files_ : files) applications_ (without_dgfip_m_ : bool)
   optimize_unsafe_float := optimize_unsafe_float_;
   m_clean_calls := m_clean_calls_;
   execution_mode := execution_mode_;
-  income_year :=  income_year_;
+  income_year := income_year_;
   value_sort := value_sort_;
   round_ops := round_ops_;
   backend := backend_;

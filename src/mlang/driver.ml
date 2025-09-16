@@ -43,8 +43,9 @@ let process_dgfip_options (backend : Config.backend)
 (* The legacy compiler plays a nasty trick on us, that we have to reproduce:
    rule 1 is modified to add assignments to APPLI_XXX variables according to the
    target application (OCEANS, BATCH and ILIAD). *)
-let patch_rule_1 (backend : Config.backend) (dgfip_flags : Config.Dgfip_options.flags)
-    (program : Mast.program) : Mast.program =
+let patch_rule_1 (backend : Config.backend)
+    (dgfip_flags : Config.Dgfip_options.flags) (program : Mast.program) :
+    Mast.program =
   let open Mast in
   let var_exists name =
     List.exists
