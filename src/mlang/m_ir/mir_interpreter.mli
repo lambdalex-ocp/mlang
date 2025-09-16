@@ -181,14 +181,14 @@ module RatMfInterp : S with type custom_float = Mir_number.RationalNumber.t
 
 (** {1 Generic interpretation API}*)
 
-val get_interp : Cli.value_sort -> Cli.round_ops -> (module S)
+val get_interp : Config.value_sort -> Config.round_ops -> (module S)
 
 val evaluate_program :
   Mir.program ->
   Com.literal Com.Var.Map.t ->
   (Com.literal, Com.Var.t) Com.event_value StrMap.t list ->
-  Cli.value_sort ->
-  Cli.round_ops ->
+  Config.value_sort ->
+  Config.round_ops ->
   (* dbg_flag *)
   bool ->
   Com.literal Com.Var.Map.t * Com.Error.Set.t * Dbg_info.t option
@@ -197,8 +197,8 @@ val evaluate_program :
 val evaluate_expr :
   Mir.program ->
   Mir.expression Pos.marked ->
-  Cli.value_sort ->
-  Cli.round_ops ->
+  Config.value_sort ->
+  Config.round_ops ->
   (* dbg_flag *)
   bool ->
   Com.literal

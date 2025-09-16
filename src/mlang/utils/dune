@@ -5,14 +5,14 @@
   (package mlang)
   (flags (:standard -open Utils_common -open Platform))
   (modules strSet setExt pp mapExt strMap setSetExt intSet
-           errors intMap config sorting
+           errors intMap sorting
            charMap strings topologicalSorting utils)
   (libraries dune-build-info platform utils_common))
 
 (library
   (name utils_common)
   (package mlang)
-  (modules pos dgfip_m))
+  (modules pos dgfip_m config))
 
 (library
   (name platform)

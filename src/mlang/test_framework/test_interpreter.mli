@@ -18,18 +18,18 @@ val check_test :
   Mir.program ->
   (* test file name *) string ->
   (* dbg_graph_file *) string option ->
-  Cli.value_sort ->
-  Cli.round_ops ->
+  Config.value_sort ->
+  Config.round_ops ->
   unit
 
 val check_all_tests :
   Mir.program ->
   string ->
-  Cli.value_sort ->
-  Cli.round_ops ->
+  Config.value_sort ->
+  Config.round_ops ->
   (string -> bool) ->
   unit
 (** Similar to [check_test] but tests a whole folder full of test files *)
 
 val check_one_test :
-  Mir.program -> string -> Cli.value_sort -> Cli.round_ops -> unit
+  Mir.program -> string -> Config.value_sort -> Config.round_ops -> unit
