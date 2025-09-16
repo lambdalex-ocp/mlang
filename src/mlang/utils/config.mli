@@ -136,7 +136,7 @@ val set_all_arg_refs :
   (* optimize_unsafe_float *) bool ->
   (* m_clean_call *) bool ->
   (* comparison_error_margin*) float option ->
-  (* income_year *) int option ->
+  (* income_year *) int ->
   value_sort ->
   round_ops ->
   backend ->

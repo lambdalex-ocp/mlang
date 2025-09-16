@@ -53,7 +53,7 @@ let mlang_t
       string option ->
       string option ->
       float option ->
-      int option ->
+      int ->
       bool ->
       string list option ->
       string option ->
@@ -76,7 +76,7 @@ let set_all_arg_refs
     (_ : bool)
     (_ : bool)
     (_ : float option)
-    (_ : int option)
+    (_ : int)
     (_ : Config.value_sort)
     (_ : Config.round_ops)
     (_ : Config.backend)

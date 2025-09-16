@@ -172,7 +172,7 @@ let comparison_error_margin_cli =
 let income_year_cli =
   Arg.(
     value
-    & opt (some int) None
+    & opt (int) (1900 + (Unix.localtime (Unix.time())).Unix.tm_year - 1)
     & info [ "income-year" ] ~docv:"INCOME_YEAR"
         ~doc:"Set the year of the income.")
 

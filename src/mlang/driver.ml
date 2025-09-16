@@ -163,7 +163,7 @@ let set_opts (files : string list) (application_names : string list)
     (run_test : string option) (mpp_function : string)
     (optimize_unsafe_float : bool) (precision : string option)
     (roundops : string option) (comparison_error_margin : float option)
-    (income_year : int option) (m_clean_calls : bool)
+    (income_year : int) (m_clean_calls : bool)
     (dgfip_options : string list option) (dbgraph_var_focus : string option) =
   let value_sort =
     let precision = Option.get precision in
