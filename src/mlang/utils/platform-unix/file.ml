@@ -62,7 +62,11 @@ let open_file_for_text_extraction (pos : Pos.t) =
         if n < sline then get_lines (n + 1)
         else if n >= sline && n <= eline then line :: get_lines (n + 1)
         else []
-    | None -> []
+    | None -> (
+        match oc with
+        | Some ocf ->
+            close_in ocf;
+            []
+        | _ -> [])
   in
-  (match oc with Some ocf -> close_in ocf | _ -> ());
   get_lines
