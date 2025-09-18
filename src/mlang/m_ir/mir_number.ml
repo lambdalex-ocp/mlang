@@ -326,153 +326,135 @@ module IntervalNumber : NumberInterface = struct
 end
 
 module RationalNumber : NumberInterface = struct
-  type t = Mpqf.t
+  include Q
 
-  let format_t fmt f = Mpqf.print fmt f
+  let format_t fmt f = Q.pp_print fmt f
 
   let format_prec_t _mi _ma fmt f = format_t fmt f
 
-  let abs x = Mpqf.abs x
+  let abs x = Q.abs x
 
   let floor x =
-    let num = Mpqf.get_num x in
-    let dem = Mpqf.get_den x in
-    Mpqf.of_mpz (Mpzf.fdiv_q num dem)
+    let num = Q.num x in
+    let dem = Q.den x in
+    Q.of_bigint (Z.fdiv num dem)
 
   let ceil x =
-    let num = Mpqf.get_num x in
-    let dem = Mpqf.get_den x in
-    Mpqf.of_mpz (Mpzf.cdiv_q num dem)
+    let num = Q.num x in
+    let dem = Q.den x in
+    Q.of_bigint (Z.cdiv num dem)
 
-  let of_int i = Mpqf.of_int (Int64.to_int i)
+  let of_int i = Q.of_int64 i
 
-  let to_int f = Int64.of_float (Mpqf.to_float f)
+  let to_int f = Q.to_int64 f
 
-  let of_float f = Mpqf.of_float f
+  let of_float_input _ f = Q.of_float f
 
-  let of_float_input _ f = Mpqf.of_float f
+  let to_float f = Q.to_float f
 
-  let to_float f = Mpqf.to_float f
+  let zero () = Q.zero
 
-  let zero () = Mpqf.of_int 0
+  let one () = Q.one
 
-  let one () = Mpqf.of_int 1
+  let ( =. ) x y = Q.equal x y
 
-  let ( =. ) x y = Mpqf.equal x y
+  let ( =. ) x y = Q.( = ) x y
 
-  let ( >=. ) x y = Mpqf.cmp x y >= 0
+  let ( >=. ) x y = Q.( >= ) x y
 
-  let ( >. ) x y = Mpqf.cmp x y > 0
+  let ( >. ) x y = Q.( > ) x y
 
-  let ( <. ) x y = Mpqf.cmp x y < 0
+  let ( <. ) x y = Q.( < ) x y
 
-  let ( <=. ) x y = Mpqf.cmp x y <= 0
+  let ( <=. ) x y = Q.( <= ) x y
 
-  let ( +. ) x y = Mpqf.add x y
+  let ( +. ) x y = Q.( + ) x y
 
-  let ( -. ) x y = Mpqf.sub x y
+  let ( -. ) x y = Q.( - ) x y
 
-  let ( /. ) x y = Mpqf.div x y
+  let ( /. ) x y = Q.div x y
 
-  let ( *. ) x y = Mpqf.mul x y
+  let ( *. ) x y = Q.mul x y
 
   let ( %. ) x y =
     let d = x /. y in
     let n = if d >=. zero () then floor d else ceil d in
     x -. (n *. y)
 
-  let min x y = if x >. y then y else x
+  let min x y = Q.min x y
 
-  let max x y = if x >. y then x else y
+  let max x y = Q.max x y
 
   let is_zero x = x =. zero ()
 
-  let is_nan_or_inf (x : t) =
-    let max = Mpz.init () in
-    Mpz.pow_ui max (Mpz.of_int 2) 128;
-    let min = Mpzf.sub (Mpzf.of_int 0) max in
-    Mpzf.cmp (Mpqf.get_num x) max > 0
-    || Mpzf.cmp (Mpqf.get_den x) max > 0
-    || Mpzf.cmp (Mpqf.get_num x) min < 0
-    || Mpzf.cmp (Mpqf.get_den x) min < 0
+  let is_nan_or_inf x = not (Q.is_real x)
 end
 
 module BigIntFixedPointNumber (P : sig
   val scaling_factor_bits : int ref
 end) : NumberInterface = struct
-  type t = Mpzf.t
+  type t = Z.t
 
-  let precision_modulo () =
-    (* 2 ** P.bit_size_of_int *)
-    let result = Mpz.init () in
-    Mpz.pow_ui result (Mpzf.of_int 2) !P.scaling_factor_bits;
-    Mpzf.of_mpz result
+  let precision_modulo () = Z.pow (Z.of_int 2) !P.scaling_factor_bits
+  (* (* 2 ** P.bit_size_of_int *) *)
 
-  let format_t fmt (f : t) =
-    Format.fprintf fmt "%f"
-      (Mpfrf.to_float
-         (Mpfrf.div (Mpfrf.of_mpz f Near)
-            (Mpfrf.of_mpz (precision_modulo ()) Near)
-            Near))
+  let format_t fmt (f : t) = Format.fprintf fmt "%a" Z.pp_print f
 
   let format_prec_t _mi _ma fmt (f : t) = format_t fmt f
 
-  let modf x =
-    let int_part, frac_part = Mpzf.tdiv_qr x (precision_modulo ()) in
-    let int_part = Mpzf.mul int_part (precision_modulo ()) in
-    (frac_part, int_part)
+  let modf = modf
 
-  let abs x = Mpzf.abs x
+  let abs x = Z.abs x
 
   let floor x =
     let prec_mod = precision_modulo () in
-    Mpzf.mul (Mpzf.fdiv_q x prec_mod) prec_mod
+    Z.mul (Z.fdiv x prec_mod) prec_mod
 
   let ceil x =
     let prec_mod = precision_modulo () in
-    Mpzf.mul (Mpzf.cdiv_q x prec_mod) prec_mod
+    Z.mul (Z.cdiv x prec_mod) prec_mod
 
-  let of_int i = Mpzf.mul (Mpzf.of_int (Int64.to_int i)) (precision_modulo ())
+  let of_int i = Z.mul (Z.of_int64 i) (precision_modulo ())
 
-  let to_int f =
-    let s = Mpzf.to_float (Mpzf.tdiv_q f (precision_modulo ())) in
-    Int64.of_float s
+  let to_int f = Z.to_int64 (Z.div f (precision_modulo ()))
 
-  let of_float (f : float) : t =
-    let frac_part, int_part = Float.modf f in
-    let frac_part_scaled = frac_part *. Mpzf.to_float (precision_modulo ()) in
-    Mpzf.add
-      (Mpzf.of_float frac_part_scaled)
-      (Mpzf.mul (Mpzf.of_float int_part) (precision_modulo ()))
+  let of_float (f : float) : t = Z.of_float f
+  (***)
+  (* let frac_part, int_part = Float.modf f in *)
+  (* let frac_part_scaled = frac_part *. Mpzf.to_float (precision_modulo ()) in *)
+  (* Mpzf.add *)
+  (*   (Mpzf.of_float frac_part_scaled) *)
+  (*   (Mpzf.mul (Mpzf.of_float int_part) (precision_modulo ())) *)
 
   let of_float_input _ (f : float) : t = of_float f
 
-  let to_float f =
-    let frac_part, int_part = modf f in
-    Mpzf.to_float (Mpzf.tdiv_q int_part (precision_modulo ()))
-    +. (Mpzf.to_float frac_part /. Mpzf.to_float (precision_modulo ()))
+  let to_float f = Z.to_float f
 
-  let zero () = Mpzf.of_int 0
+  (* let frac_part, int_part = modf f in *)
+  (* Mpzf.to_float (Mpzf.tdiv_q int_part (precision_modulo ())) *)
+  (* +. (Mpzf.to_float frac_part /. Mpzf.to_float (precision_modulo ())) *)
 
-  let one () = Mpzf.mul (Mpzf.of_int 1) (precision_modulo ())
+  let zero () = Z.zero
 
-  let ( =. ) x y = Mpzf.cmp x y = 0
+  let one () = Z.mul Z.one (precision_modulo ())
 
-  let ( >=. ) x y = Mpzf.cmp x y >= 0
+  let ( =. ) x y = Z.equal x y
 
-  let ( >. ) x y = Mpzf.cmp x y > 0
+  let ( >=. ) x y = Z.geq x y
 
-  let ( <. ) x y = Mpzf.cmp x y < 0
+  let ( >. ) x y = Z.gt x y
 
-  let ( <=. ) x y = Mpzf.cmp x y <= 0
+  let ( <. ) x y = Z.lt x y
 
-  let ( +. ) x y = Mpzf.add x y
+  let ( <=. ) x y = Z.leq x y
 
-  let ( -. ) x y = Mpzf.sub x y
+  let ( +. ) x y = Z.add x y
 
-  let ( /. ) x y = Mpzf.tdiv_q (Mpzf.mul x (precision_modulo ())) y
+  let ( -. ) x y = Z.sub x y
 
-  let ( *. ) x y = Mpzf.tdiv_q (Mpzf.mul x y) (precision_modulo ())
+  let ( /. ) x y = Z.div (Z.mul x (precision_modulo ())) y
+
+  let ( *. ) x y = Z.div (Z.mul x y) (precision_modulo ())
 
   let ( %. ) x y =
     let d = x /. y in

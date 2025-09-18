@@ -149,36 +149,6 @@ module FloatDefInterp :
     - Multi: use the rouding operations of the PC/multi-thread context
     - Mf: use the rounding operations of the mainframe context *)
 
-module FloatMultInterp :
-  S with type custom_float = Mir_number.RegularFloatNumber.t
-
-module FloatMfInterp :
-  S with type custom_float = Mir_number.RegularFloatNumber.t
-
-module MPFRDefInterp : S with type custom_float = Mir_number.MPFRNumber.t
-
-module MPFRMultInterp : S with type custom_float = Mir_number.MPFRNumber.t
-
-module MPFRMfInterp : S with type custom_float = Mir_number.MPFRNumber.t
-
-module BigIntDefInterp : S
-
-module BigIntMultInterp : S
-
-module BigIntMfInterp : S
-
-module IntvDefInterp : S with type custom_float = Mir_number.IntervalNumber.t
-
-module IntvMultInterp : S with type custom_float = Mir_number.IntervalNumber.t
-
-module IntvMfInterp : S with type custom_float = Mir_number.IntervalNumber.t
-
-module RatDefInterp : S with type custom_float = Mir_number.RationalNumber.t
-
-module RatMultInterp : S with type custom_float = Mir_number.RationalNumber.t
-
-module RatMfInterp : S with type custom_float = Mir_number.RationalNumber.t
-
 (** {1 Generic interpretation API}*)
 
 val get_interp : Config.value_sort -> Config.round_ops -> (module S)

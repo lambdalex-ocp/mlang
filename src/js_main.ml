@@ -61,6 +61,6 @@ open Js_of_ocaml
 
 let () =
   Format.printf "wejifjiowefj@.";
-  Js.Unsafe.global##.console##log "hey ho";
-  let ctx = Interp.BigIntDefInterp.empty_ctx minimal_m_program false in
-  Js.Unsafe.global##.console##log ctx
+  Js.Unsafe.global##.console##log "hey ho"
+(* let ctx = Interp.BigIntDefInterp.empty_ctx minimal_m_program false in *)
+(* Js.Unsafe.global##.console##log ctx *)
