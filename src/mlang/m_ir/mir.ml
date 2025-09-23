@@ -21,24 +21,32 @@
 (** Variables are first-class objects *)
 
 type set_value = Com.Var.t Com.set_value
+[@@deriving show]
 
 type access = Com.Var.t Com.access
+[@@deriving show]
 
 type m_access = access Pos.marked
+[@@deriving show]
 
 type expression = Com.Var.t Com.expression
+[@@deriving show]
 
 type m_expression = expression Pos.marked
+[@@deriving show]
 
 (** The definitions here are modeled closely to the source M language. One could
     also adopt a more lambda-calculus-compatible model with functions used to
     model tables. *)
 
 type instruction = (Com.Var.t, Com.Error.t) Com.instruction
+[@@deriving show]
 
 type m_instruction = instruction Pos.marked
+[@@deriving show]
 
 type target = (Com.Var.t, Com.Error.t) Com.target
+[@@deriving show]
 
 type stats = {
   nb_computed : int;
@@ -57,6 +65,7 @@ type stats = {
   max_nb_args : int;
   table_map : Com.Var.t IntMap.t;
 }
+[@@deriving show]
 
 type program = {
   program_safe_prefix : string;
@@ -81,6 +90,7 @@ type program = {
   program_main_target : string;
   program_stats : stats;
 }
+[@@deriving show]
 
 (** {1 Helpers}*)
 

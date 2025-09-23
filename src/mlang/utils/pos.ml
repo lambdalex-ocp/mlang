@@ -18,6 +18,7 @@
 exception ConflictingFilenames of string * string
 
 type ofst = { sofst : int; eofst : int }
+[@@deriving show]
 
 let make_ofst sofst eofst = { sofst; eofst }
 
@@ -25,7 +26,7 @@ type t = {
   pos_filename : string;
   pos_loc : Lexing.position * Lexing.position;
   pos_ofst : ofst;
-}
+} [@@deriving show]
 (** A position in the source code is a file, as well as begin and end location
     of the form col:line *)
 
@@ -86,6 +87,7 @@ let format fmt (pos : t) =
 
 type 'a marked =
   | Mark of 'a * t
+  [@@deriving show]
       (** Everything related to the source code should keep its t stored, to improve
     error messages *)
 

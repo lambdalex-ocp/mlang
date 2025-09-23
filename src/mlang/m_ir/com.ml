@@ -31,6 +31,7 @@ module CatVar = struct
     let pp ?(sep = ", ") ?(pp_elt = cat_var_pp) (_ : unit)
         (fmt : Format.formatter) (set : t) : unit =
       pp ~sep ~pp_elt () fmt set
+
   end
 
   module Map = struct
@@ -411,17 +412,22 @@ type 'a domain = {
   dom_data : 'a;
   dom_used : int Pos.marked option;
 }
+[@@deriving show]
 
 type rule_domain_data = { rdom_computable : bool }
+[@@deriving show]
 
 type rule_domain = rule_domain_data domain
+[@@deriving show]
 
 type verif_domain_data = {
   vdom_auth : Pos.t CatVar.Map.t;
   vdom_verifiable : bool;
 }
+[@@deriving show]
 
 type verif_domain = verif_domain_data domain
+[@@deriving show]
 
 type variable_space = {
   vs_id : int;
@@ -429,21 +435,28 @@ type variable_space = {
   vs_cats : CatVar.loc Pos.marked CatVar.LocMap.t;
   vs_by_default : bool;
 }
+[@@deriving show]
 
 type literal = Float of float | Undefined
+[@@deriving show]
 
 type origin = string Pos.marked option
+[@@deriving show]
 
 type literal_with_orig = { lit : literal; origin : origin }
+[@@deriving show]
 
 (** Unary operators *)
 type unop = Not | Minus
+[@@deriving show]
 
 (** Binary operators *)
 type binop = And | Or | Add | Sub | Mul | Div | Mod
+[@@deriving show]
 
 (** Comparison operators *)
 type comp_op = Gt | Gte | Lt | Lte | Eq | Neq
+[@@deriving show]
 
 type func =
   | SumFunc  (** Sums the arguments *)
@@ -462,16 +475,21 @@ type func =
   | ComplNumber
   | NbEvents
   | Func of string
+[@@deriving show]
 
 type var_name_generic = { base : string; parameters : char list }
+[@@deriving show]
 (** For generic variables, we record the list of their lowercase parameters *)
 
 (** A variable is either generic (with loop parameters) or normal *)
 type var_name = Normal of string | Generic of var_name_generic
+[@@deriving show]
 
 type m_var_name = var_name Pos.marked
+[@@deriving show]
 
 type var_space = (m_var_name * int) option
+[@@deriving show]
 
 type 'v access =
   | VarAccess of var_space * 'v
@@ -523,10 +541,13 @@ and 'v expression =
   | NbBloquantes
 
 and 'v m_expression = 'v expression Pos.marked
+[@@deriving show]
 
 type const = { id : string; value : literal; pos : Pos.t }
+[@@deriving show]
 
 type 'v dep = V of 'v | Const of const
+[@@deriving show]
 
 (* This code was taken from Noe and adapted to the 2025 var architecture *)
 let get_used_variables (e : 'v expression) :
@@ -587,6 +608,7 @@ let mk_atomlit_from_const lit constname pos =
 
 module Error = struct
   type typ = Anomaly | Discordance | Information
+[@@deriving show]
 
   let compare_typ e1 e2 =
     match (e1, e2) with
@@ -605,6 +627,7 @@ module Error = struct
     is_isf : string Pos.marked;
     typ : typ;
   }
+[@@deriving show]
 
   let pp_descr fmt err =
     Pp.fpr fmt "%s:%s:%s:%s:%s" (Pos.unmark err.famille)
@@ -648,24 +671,30 @@ module Error = struct
 end
 
 type print_std = StdOut | StdErr
+[@@deriving show]
 
 type print_info = Name | Alias
+[@@deriving show]
 
 type 'v print_arg =
   | PrintString of string
   | PrintAccess of print_info * 'v m_access
   | PrintIndent of 'v m_expression
   | PrintExpr of 'v m_expression * int * int
+[@@deriving show]
 
 type 'v formula_loop = 'v loop_variables Pos.marked
+[@@deriving show]
 
 type 'v formula_decl =
   | VarDecl of 'v access Pos.marked * 'v m_expression
   | EventFieldRef of 'v m_expression * string Pos.marked * int * 'v
+[@@deriving show]
 
 type 'v formula =
   | SingleFormula of 'v formula_decl
   | MultipleFormulaes of 'v formula_loop * 'v formula_decl
+[@@deriving show]
 
 type ('v, 'e) instruction =
   | Affectation of 'v formula Pos.marked
@@ -709,6 +738,7 @@ type ('v, 'e) instruction =
   | FinalizeErrors
 
 and ('v, 'e) m_instruction = ('v, 'e) instruction Pos.marked
+[@@deriving show]
 
 type ('v, 'e) target = {
   target_name : string Pos.marked;
@@ -722,7 +752,7 @@ type ('v, 'e) target = {
   target_sz_tmps : int;
   target_nb_refs : int;
   target_prog : ('v, 'e) m_instruction list;
-}
+}[@@deriving show]
 
 let target_is_function t = t.target_result <> None
 
