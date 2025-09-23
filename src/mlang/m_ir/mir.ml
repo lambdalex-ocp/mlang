@@ -20,33 +20,25 @@
 
 (** Variables are first-class objects *)
 
-type set_value = Com.Var.t Com.set_value
-[@@deriving show]
+type set_value = Com.Var.t Com.set_value [@@deriving show]
 
-type access = Com.Var.t Com.access
-[@@deriving show]
+type access = Com.Var.t Com.access [@@deriving show]
 
-type m_access = access Pos.marked
-[@@deriving show]
+type m_access = access Pos.marked [@@deriving show]
 
-type expression = Com.Var.t Com.expression
-[@@deriving show]
+type expression = Com.Var.t Com.expression [@@deriving show]
 
-type m_expression = expression Pos.marked
-[@@deriving show]
+type m_expression = expression Pos.marked [@@deriving show]
 
 (** The definitions here are modeled closely to the source M language. One could
     also adopt a more lambda-calculus-compatible model with functions used to
     model tables. *)
 
-type instruction = (Com.Var.t, Com.Error.t) Com.instruction
-[@@deriving show]
+type instruction = (Com.Var.t, Com.Error.t) Com.instruction [@@deriving show]
 
-type m_instruction = instruction Pos.marked
-[@@deriving show]
+type m_instruction = instruction Pos.marked [@@deriving show]
 
-type target = (Com.Var.t, Com.Error.t) Com.target
-[@@deriving show]
+type target = (Com.Var.t, Com.Error.t) Com.target [@@deriving show]
 
 type stats = {
   nb_computed : int;
@@ -351,4 +343,8 @@ let expand_functions (p : program) : program =
   in
   let program_functions = update_instrs p.program_functions in
   let program_targets = update_instrs p.program_targets in
-  { p with program_functions; program_targets }
+  let return = { p with program_functions; program_targets } in
+  let out = open_out "program_dump.txt" in
+  let fmt = Format.formatter_of_out_channel out in
+  Format.fprintf fmt "%a@." pp_program return;
+  return

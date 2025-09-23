@@ -20,8 +20,7 @@
 
 type ofst = { sofst : int; eofst : int }
 
-type t
-[@@deriving show]
+type t [@@deriving show]
 
 val make : string -> Lexing.position * Lexing.position -> ofst -> t
 
@@ -34,13 +33,12 @@ val format_gnu : Format.formatter -> t -> unit
 
 val format : Format.formatter -> t -> unit
 
-type 'a marked =
-  | Mark of 'a * t
-  [@@deriving show]
-      (** Everything related to the source code should keep its t stored, to improve
+(** Everything related to the source code should keep its t stored, to improve
     error messages *)
+type 'a marked = Mark of 'a * t [@@deriving show]
 
-val pp_marked : (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a marked -> unit
+val pp_marked :
+  (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a marked -> unit
 
 val none : t
 (** Placeholder t *)

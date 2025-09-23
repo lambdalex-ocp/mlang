@@ -31,7 +31,6 @@ module CatVar = struct
     let pp ?(sep = ", ") ?(pp_elt = cat_var_pp) (_ : unit)
         (fmt : Format.formatter) (set : t) : unit =
       pp ~sep ~pp_elt () fmt set
-
   end
 
   module Map = struct
@@ -107,6 +106,7 @@ module CatVar = struct
     pos : Pos.t;
     attributs : Pos.t StrMap.t;
   }
+  [@@deriving show]
 end
 
 (** Here are all the types a value can have. Date types don't seem to be used at
@@ -375,6 +375,7 @@ module Var = struct
 end
 
 type event_field = { name : string Pos.marked; index : int; is_var : bool }
+[@@deriving show]
 
 type ('n, 'v) event_value = Numeric of 'n | RefVar of 'v
 
@@ -402,23 +403,28 @@ module DomainIdMap = struct
     pp ~sep ~pp_key ~assoc pp_val fmt map
 end
 
+let pp_string fmt s = Format.fprintf fmt "%s" s
+
 type 'a domain = {
   dom_id : DomainId.t Pos.marked;
+      [@printer
+        Pos.pp_marked
+          (DomainId.pp_deriving (fun fmt s -> Format.fprintf fmt "%s" s))]
   dom_names : Pos.t DomainIdMap.t;
   dom_by_default : bool;
   dom_min : DomainIdSet.t;
+      [@printer DomainIdSet.pp_deriving (DomainId.pp_deriving pp_string)]
   dom_max : DomainIdSet.t;
-  dom_rov : IntSet.t;
+      [@printer DomainIdSet.pp_deriving (DomainId.pp_deriving pp_string)]
+  dom_rov : IntSet.t; [@printer IntSet.pp_deriving Format.pp_print_int]
   dom_data : 'a;
   dom_used : int Pos.marked option;
 }
 [@@deriving show]
 
-type rule_domain_data = { rdom_computable : bool }
-[@@deriving show]
+type rule_domain_data = { rdom_computable : bool } [@@deriving show]
 
-type rule_domain = rule_domain_data domain
-[@@deriving show]
+type rule_domain = rule_domain_data domain [@@deriving show]
 
 type verif_domain_data = {
   vdom_auth : Pos.t CatVar.Map.t;
@@ -426,8 +432,7 @@ type verif_domain_data = {
 }
 [@@deriving show]
 
-type verif_domain = verif_domain_data domain
-[@@deriving show]
+type verif_domain = verif_domain_data domain [@@deriving show]
 
 type variable_space = {
   vs_id : int;
@@ -437,26 +442,20 @@ type variable_space = {
 }
 [@@deriving show]
 
-type literal = Float of float | Undefined
-[@@deriving show]
+type literal = Float of float | Undefined [@@deriving show]
 
-type origin = string Pos.marked option
-[@@deriving show]
+type origin = string Pos.marked option [@@deriving show]
 
-type literal_with_orig = { lit : literal; origin : origin }
-[@@deriving show]
+type literal_with_orig = { lit : literal; origin : origin } [@@deriving show]
 
 (** Unary operators *)
-type unop = Not | Minus
-[@@deriving show]
+type unop = Not | Minus [@@deriving show]
 
 (** Binary operators *)
-type binop = And | Or | Add | Sub | Mul | Div | Mod
-[@@deriving show]
+type binop = And | Or | Add | Sub | Mul | Div | Mod [@@deriving show]
 
 (** Comparison operators *)
-type comp_op = Gt | Gte | Lt | Lte | Eq | Neq
-[@@deriving show]
+type comp_op = Gt | Gte | Lt | Lte | Eq | Neq [@@deriving show]
 
 type func =
   | SumFunc  (** Sums the arguments *)
@@ -485,11 +484,9 @@ type var_name_generic = { base : string; parameters : char list }
 type var_name = Normal of string | Generic of var_name_generic
 [@@deriving show]
 
-type m_var_name = var_name Pos.marked
-[@@deriving show]
+type m_var_name = var_name Pos.marked [@@deriving show]
 
-type var_space = (m_var_name * int) option
-[@@deriving show]
+type var_space = (m_var_name * int) option [@@deriving show]
 
 type 'v access =
   | VarAccess of var_space * 'v
@@ -540,14 +537,11 @@ and 'v expression =
   | NbInformatives
   | NbBloquantes
 
-and 'v m_expression = 'v expression Pos.marked
-[@@deriving show]
+and 'v m_expression = 'v expression Pos.marked [@@deriving show]
 
-type const = { id : string; value : literal; pos : Pos.t }
-[@@deriving show]
+type const = { id : string; value : literal; pos : Pos.t } [@@deriving show]
 
-type 'v dep = V of 'v | Const of const
-[@@deriving show]
+type 'v dep = V of 'v | Const of const [@@deriving show]
 
 (* This code was taken from Noe and adapted to the 2025 var architecture *)
 let get_used_variables (e : 'v expression) :
@@ -607,8 +601,7 @@ let mk_atomlit_from_const lit constname pos =
   AtomLiteral (mk_lit_with_orig lit (Some (Mark (constname, pos))))
 
 module Error = struct
-  type typ = Anomaly | Discordance | Information
-[@@deriving show]
+  type typ = Anomaly | Discordance | Information [@@deriving show]
 
   let compare_typ e1 e2 =
     match (e1, e2) with
@@ -627,7 +620,7 @@ module Error = struct
     is_isf : string Pos.marked;
     typ : typ;
   }
-[@@deriving show]
+  [@@deriving show]
 
   let pp_descr fmt err =
     Pp.fpr fmt "%s:%s:%s:%s:%s" (Pos.unmark err.famille)
@@ -670,11 +663,9 @@ module Error = struct
   end
 end
 
-type print_std = StdOut | StdErr
-[@@deriving show]
+type print_std = StdOut | StdErr [@@deriving show]
 
-type print_info = Name | Alias
-[@@deriving show]
+type print_info = Name | Alias [@@deriving show]
 
 type 'v print_arg =
   | PrintString of string
@@ -683,8 +674,7 @@ type 'v print_arg =
   | PrintExpr of 'v m_expression * int * int
 [@@deriving show]
 
-type 'v formula_loop = 'v loop_variables Pos.marked
-[@@deriving show]
+type 'v formula_loop = 'v loop_variables Pos.marked [@@deriving show]
 
 type 'v formula_decl =
   | VarDecl of 'v access Pos.marked * 'v m_expression
@@ -737,8 +727,7 @@ type ('v, 'e) instruction =
   | ExportErrors
   | FinalizeErrors
 
-and ('v, 'e) m_instruction = ('v, 'e) instruction Pos.marked
-[@@deriving show]
+and ('v, 'e) m_instruction = ('v, 'e) instruction Pos.marked [@@deriving show]
 
 type ('v, 'e) target = {
   target_name : string Pos.marked;
@@ -752,7 +741,8 @@ type ('v, 'e) target = {
   target_sz_tmps : int;
   target_nb_refs : int;
   target_prog : ('v, 'e) m_instruction list;
-}[@@deriving show]
+}
+[@@deriving show]
 
 let target_is_function t = t.target_result <> None
 

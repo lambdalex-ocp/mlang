@@ -17,16 +17,25 @@
 
 exception ConflictingFilenames of string * string
 
-type ofst = { sofst : int; eofst : int }
-[@@deriving show]
+type ofst = { sofst : int; eofst : int } [@@deriving show]
 
 let make_ofst sofst eofst = { sofst; eofst }
+
+type lexing_pos = [%import: Lexing.position] [@@deriving show]
 
 type t = {
   pos_filename : string;
   pos_loc : Lexing.position * Lexing.position;
+      [@printer
+        fun fmt (a, b) ->
+          Format.fprintf fmt "(%a,%a)" pp_lexing_pos a pp_lexing_pos b]
   pos_ofst : ofst;
-} [@@deriving show]
+}
+
+let pp fmt _ = Format.fprintf fmt "pos-info"
+
+let show _ = "pos-info"
+
 (** A position in the source code is a file, as well as begin and end location
     of the form col:line *)
 
@@ -85,11 +94,9 @@ let format fmt (pos : t) =
     e.Lexing.pos_lnum
     (e.Lexing.pos_cnum - e.Lexing.pos_bol + 1)
 
-type 'a marked =
-  | Mark of 'a * t
-  [@@deriving show]
-      (** Everything related to the source code should keep its t stored, to improve
+(** Everything related to the source code should keep its t stored, to improve
     error messages *)
+type 'a marked = Mark of 'a * t [@@deriving show]
 
 (** Placeholder t *)
 let none : t =

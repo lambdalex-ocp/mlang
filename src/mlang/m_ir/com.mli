@@ -29,6 +29,7 @@ module CatVar : sig
     pos : Pos.t;
     attributs : Pos.t StrMap.t;
   }
+  [@@deriving show]
 end
 
 (** Here are all the types a value can have. Date types don't seem to be used at
@@ -171,6 +172,7 @@ module Var : sig
 end
 
 type event_field = { name : string Pos.marked; index : int; is_var : bool }
+[@@deriving show]
 
 type ('n, 'v) event_value = Numeric of 'n | RefVar of 'v
 
@@ -192,14 +194,15 @@ type 'a domain = {
   dom_used : int Pos.marked option;
 }
 
-type rule_domain_data = { rdom_computable : bool }
+type rule_domain_data = { rdom_computable : bool } [@@deriving show]
 
-type rule_domain = rule_domain_data domain
+type rule_domain = rule_domain_data domain [@@deriving show]
 
 type verif_domain_data = {
   vdom_auth : Pos.t CatVar.Map.t;
   vdom_verifiable : bool;
 }
+[@@deriving show]
 
 type variable_space = {
   vs_id : int;
@@ -207,20 +210,21 @@ type variable_space = {
   vs_cats : CatVar.loc Pos.marked CatVar.LocMap.t;
   vs_by_default : bool;
 }
+[@@deriving show]
 
-type verif_domain = verif_domain_data domain
+type verif_domain = verif_domain_data domain [@@deriving show]
 
-type literal = Float of float | Undefined
+type literal = Float of float | Undefined [@@deriving show]
 
-type origin = string Pos.marked option
+type origin = string Pos.marked option [@@deriving show]
 
-type literal_with_orig = { lit : literal; origin : origin }
+type literal_with_orig = { lit : literal; origin : origin } [@@deriving show]
 
 (** Unary operators *)
-type unop = Not | Minus
+type unop = Not | Minus [@@deriving show]
 
 (** Binary operators *)
-type binop = And | Or | Add | Sub | Mul | Div | Mod
+type binop = And | Or | Add | Sub | Mul | Div | Mod [@@deriving show]
 
 (** Comparison operators *)
 type comp_op = Gt | Gte | Lt | Lte | Eq | Neq
@@ -318,7 +322,7 @@ and 'v expression =
   | NbInformatives
   | NbBloquantes
 
-and 'v m_expression = 'v expression Pos.marked
+and 'v m_expression = 'v expression Pos.marked [@@deriving show]
 
 type const = { id : string; value : literal; pos : Pos.t }
 
@@ -433,7 +437,7 @@ type ('v, 'e) instruction =
   | ExportErrors
   | FinalizeErrors
 
-and ('v, 'e) m_instruction = ('v, 'e) instruction Pos.marked
+and ('v, 'e) m_instruction = ('v, 'e) instruction Pos.marked [@@deriving show]
 
 type ('v, 'e) target = {
   target_name : string Pos.marked;
@@ -448,6 +452,7 @@ type ('v, 'e) target = {
   target_nb_refs : int;
   target_prog : ('v, 'e) m_instruction list;
 }
+[@@deriving show]
 
 val target_is_function : ('v, 'e) target -> bool
 

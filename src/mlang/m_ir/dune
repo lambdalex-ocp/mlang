@@ -13,5 +13,6 @@
   mir_number
   mir_roundops)
  (package mlang)
- (preprocess (pps ppx_deriving.show))
+ (preprocess
+  (staged_pps ppx_deriving.show))
  (libraries utils ocamlgraph re zarith gmp))

@@ -11,6 +11,9 @@ module type T = sig
 
   val pp :
     ?sep:string -> ?pp_elt:(Pp.t -> elt -> unit) -> unit -> Pp.t -> t -> unit
+
+  val pp_deriving :
+    (Format.formatter -> elt -> unit) -> Format.formatter -> t -> unit
 end
 
 module Make : functor (Ord : Set.OrderedType) -> T with type elt = Ord.t

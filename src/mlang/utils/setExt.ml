@@ -16,6 +16,9 @@ module type T = sig
     Format.formatter ->
     t ->
     unit
+
+  val pp_deriving :
+    (Format.formatter -> elt -> unit) -> Format.formatter -> t -> unit
 end
 
 module Make =
@@ -47,4 +50,9 @@ functor
         false
       in
       ignore (fold foldSet set true)
+
+    let pp_deriving pp_elt fmt t =
+      Format.fprintf fmt "{";
+      pp ~pp_elt () fmt t;
+      Format.fprintf fmt "}"
   end
