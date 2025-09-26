@@ -15,6 +15,10 @@ module type T = sig
     Format.formatter ->
     t ->
     unit
+
+  val to_yojson : t -> Json.t
+  val of_yojson : Json.t -> t Json.err
+
 end
 
 module Make : functor (SetElt : SetExt.T) ->

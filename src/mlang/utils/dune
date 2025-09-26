@@ -19,16 +19,17 @@
   charMap
   strings
   topologicalSorting
+  json
   utils)
  (preprocess
-  (staged_pps ppx_deriving.show))
+  (staged_pps ppx_deriving.show ppx_deriving_yojson))
  (libraries dune-build-info platform utils_common))
 
 (library
  (name utils_common)
  (package mlang)
  (preprocess
-  (staged_pps ppx_import ppx_deriving.show))
+  (staged_pps ppx_import ppx_deriving.show ppx_deriving_yojson))
  (modules pos dgfip_m config))
 
 (library

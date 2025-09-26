@@ -20,25 +20,25 @@
 
 (** Variables are first-class objects *)
 
-type set_value = Com.Var.t Com.set_value [@@deriving show]
+type set_value = Com.Var.t Com.set_value [@@deriving show, yojson]
 
-type access = Com.Var.t Com.access [@@deriving show]
+type access = Com.Var.t Com.access [@@deriving show, yojson]
 
-type m_access = access Pos.marked [@@deriving show]
+type m_access = access Pos.marked [@@deriving show, yojson]
 
-type expression = Com.Var.t Com.expression [@@deriving show]
+type expression = Com.Var.t Com.expression [@@deriving show, yojson]
 
-type m_expression = expression Pos.marked [@@deriving show]
+type m_expression = expression Pos.marked [@@deriving show, yojson]
 
 (** The definitions here are modeled closely to the source M language. One could
     also adopt a more lambda-calculus-compatible model with functions used to
     model tables. *)
 
-type instruction = (Com.Var.t, Com.Error.t) Com.instruction [@@deriving show]
+type instruction = (Com.Var.t, Com.Error.t) Com.instruction [@@deriving show, yojson]
 
-type m_instruction = instruction Pos.marked [@@deriving show]
+type m_instruction = instruction Pos.marked [@@deriving show, yojson]
 
-type target = (Com.Var.t, Com.Error.t) Com.target [@@deriving show]
+type target = (Com.Var.t, Com.Error.t) Com.target [@@deriving show, yojson]
 
 type stats = {
   nb_computed : int;
@@ -57,7 +57,7 @@ type stats = {
   max_nb_args : int;
   table_map : Com.Var.t IntMap.t;
 }
-[@@deriving show]
+[@@deriving show, yojson]
 
 type program = {
   program_safe_prefix : string;
@@ -82,7 +82,7 @@ type program = {
   program_main_target : string;
   program_stats : stats;
 }
-[@@deriving show]
+[@@deriving show, yojson]
 
 (** {1 Helpers}*)
 

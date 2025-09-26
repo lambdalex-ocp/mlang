@@ -115,6 +115,7 @@ let complete_vars (prog : Validator.program) : Validator.program * Mir.stats =
   in
   let module CatLoc = struct
     type t = Com.CatVar.loc
+    [@@deriving yojson]
 
     let compare x y = compare x y
   end in

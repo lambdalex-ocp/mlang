@@ -1,5 +1,8 @@
 module CatVar = struct
-  type t = Input of StrSet.t | Computed of { is_base : bool }
+  type t =
+    | Input of StrSet.t [@printer StrSet.pp_deriving Format.pp_print_string]
+    | Computed of { is_base : bool }
+    [@@deriving show, yojson]
 
   let pp fmt = function
     | Input id ->
@@ -16,6 +19,7 @@ module CatVar = struct
     | Computed c0, Computed c1 -> compare c0.is_base c1.is_base
 
   type cat_var_t = t
+  [@@deriving yojson]
 
   let cat_var_pp = pp
 
@@ -24,6 +28,7 @@ module CatVar = struct
   module Set = struct
     include SetExt.Make (struct
       type t = cat_var_t
+      [@@deriving yojson]
 
       let compare = cat_var_compare
     end)
@@ -36,6 +41,7 @@ module CatVar = struct
   module Map = struct
     include MapExt.Make (struct
       type t = cat_var_t
+      [@@deriving yojson]
 
       let compare = cat_var_compare
     end)
@@ -66,7 +72,7 @@ module CatVar = struct
           Errors.raise_spanned_error "invalid variable category" id_pos
   end
 
-  type loc = LocComputed | LocBase | LocInput
+  type loc = LocComputed | LocBase | LocInput [@@deriving show, yojson]
 
   let pp_loc oc = function
     | LocInput -> Pp.fpr oc "input"
@@ -76,6 +82,7 @@ module CatVar = struct
   module LocSet = struct
     include SetExt.Make (struct
       type t = loc
+      [@@deriving yojson]
 
       let compare = Stdlib.compare
     end)
@@ -88,6 +95,7 @@ module CatVar = struct
   module LocMap = struct
     include MapExt.Make (struct
       type t = loc
+      [@@deriving yojson]
 
       let compare = Stdlib.compare
     end)
@@ -106,7 +114,7 @@ module CatVar = struct
     pos : Pos.t;
     attributs : Pos.t StrMap.t;
   }
-  [@@deriving show]
+  [@@deriving show, yojson]
 end
 
 (** Here are all the types a value can have. Date types don't seem to be used at
@@ -118,6 +126,7 @@ type value_typ =
   | DateMonth
   | Integer
   | Real
+[@@deriving yojson]
 
 type loc_tgv = {
   loc_cat : CatVar.loc;
@@ -127,16 +136,26 @@ type loc_tgv = {
   loc_cat_str : string;
   loc_cat_idx : int;
 }
+[@@deriving yojson]
 
 type loc_tmp = { loc_idx : int; loc_tab_idx : int; loc_cat_idx : int }
+[@@deriving yojson]
 
 type loc =
   | LocTgv of string * loc_tgv
   | LocTmp of string * loc_tmp
   | LocRef of string * int
+[@@deriving yojson]
+
+module Array = struct
+  include Array
+  let to_yojson _ = assert false
+  let of_yojson _ = assert false
+end
 
 module Var = struct
   type id = int
+  [@@deriving yojson]
 
   let id_cpt = ref 0
 
@@ -164,6 +183,7 @@ module Var = struct
     loc : loc;
     scope : scope;
   }
+  [@@deriving yojson]
 
   let tgv v =
     match v.scope with
@@ -302,6 +322,7 @@ module Var = struct
     }
 
   let new_tgv ~(name : string Pos.marked) ~(table : t Array.t option)
+
       ~(is_given_back : bool) ~(alias : string Pos.marked option)
       ~(descr : string Pos.marked) ~(attrs : int Pos.marked StrMap.t)
       ~(cat : CatVar.t) ~(typ : value_typ option) : t =
@@ -339,6 +360,7 @@ module Var = struct
   let pp fmt (v : t) = Format.fprintf fmt "(%d)%s" v.id (Pos.unmark v.name)
 
   type t_var = t
+  [@@deriving yojson]
 
   let pp_var = pp
 
@@ -347,6 +369,7 @@ module Var = struct
   module Set = struct
     include SetExt.Make (struct
       type t = t_var
+      [@@deriving yojson]
 
       let compare = compare_var
     end)
@@ -359,6 +382,7 @@ module Var = struct
   module Map = struct
     include MapExt.Make (struct
       type t = t_var
+      [@@deriving yojson]
 
       let compare = compare_var
     end)
@@ -375,7 +399,7 @@ module Var = struct
 end
 
 type event_field = { name : string Pos.marked; index : int; is_var : bool }
-[@@deriving show]
+[@@deriving show, yojson]
 
 type ('n, 'v) event_value = Numeric of 'n | RefVar of 'v
 
@@ -398,6 +422,7 @@ module DomainIdMap = struct
   module type T = MapExt.T with type key = DomainId.t
 
   let pp ?(sep = ", ") ?(pp_key = DomainId.pp ()) ?(assoc = " => ")
+      
       (pp_val : Format.formatter -> 'a -> unit) (fmt : Format.formatter)
       (map : 'a t) : unit =
     pp ~sep ~pp_key ~assoc pp_val fmt map
@@ -420,19 +445,19 @@ type 'a domain = {
   dom_data : 'a;
   dom_used : int Pos.marked option;
 }
-[@@deriving show]
+[@@deriving show, yojson]
 
-type rule_domain_data = { rdom_computable : bool } [@@deriving show]
+type rule_domain_data = { rdom_computable : bool } [@@deriving show, yojson]
 
-type rule_domain = rule_domain_data domain [@@deriving show]
+type rule_domain = rule_domain_data domain [@@deriving show, yojson]
 
 type verif_domain_data = {
   vdom_auth : Pos.t CatVar.Map.t;
   vdom_verifiable : bool;
 }
-[@@deriving show]
+[@@deriving show, yojson]
 
-type verif_domain = verif_domain_data domain [@@deriving show]
+type verif_domain = verif_domain_data domain [@@deriving show, yojson]
 
 type variable_space = {
   vs_id : int;
@@ -440,22 +465,22 @@ type variable_space = {
   vs_cats : CatVar.loc Pos.marked CatVar.LocMap.t;
   vs_by_default : bool;
 }
-[@@deriving show]
+[@@deriving show, yojson]
 
-type literal = Float of float | Undefined [@@deriving show]
+type literal = Float of float | Undefined [@@deriving show, yojson]
 
-type origin = string Pos.marked option [@@deriving show]
+type origin = string Pos.marked option [@@deriving show, yojson]
 
-type literal_with_orig = { lit : literal; origin : origin } [@@deriving show]
+type literal_with_orig = { lit : literal; origin : origin } [@@deriving show, yojson]
 
 (** Unary operators *)
-type unop = Not | Minus [@@deriving show]
+type unop = Not | Minus [@@deriving show, yojson]
 
 (** Binary operators *)
-type binop = And | Or | Add | Sub | Mul | Div | Mod [@@deriving show]
+type binop = And | Or | Add | Sub | Mul | Div | Mod [@@deriving show, yojson]
 
 (** Comparison operators *)
-type comp_op = Gt | Gte | Lt | Lte | Eq | Neq [@@deriving show]
+type comp_op = Gt | Gte | Lt | Lte | Eq | Neq [@@deriving show, yojson]
 
 type func =
   | SumFunc  (** Sums the arguments *)
@@ -474,19 +499,19 @@ type func =
   | ComplNumber
   | NbEvents
   | Func of string
-[@@deriving show]
+[@@deriving show, yojson]
 
 type var_name_generic = { base : string; parameters : char list }
-[@@deriving show]
+[@@deriving show, yojson]
 (** For generic variables, we record the list of their lowercase parameters *)
 
 (** A variable is either generic (with loop parameters) or normal *)
 type var_name = Normal of string | Generic of var_name_generic
-[@@deriving show]
+[@@deriving show, yojson]
 
-type m_var_name = var_name Pos.marked [@@deriving show]
+type m_var_name = var_name Pos.marked [@@deriving show, yojson]
 
-type var_space = (m_var_name * int) option [@@deriving show]
+type var_space = (m_var_name * int) option [@@deriving show, yojson]
 
 type 'v access =
   | VarAccess of var_space * 'v
@@ -537,11 +562,11 @@ and 'v expression =
   | NbInformatives
   | NbBloquantes
 
-and 'v m_expression = 'v expression Pos.marked [@@deriving show]
+and 'v m_expression = 'v expression Pos.marked [@@deriving show, yojson]
 
-type const = { id : string; value : literal; pos : Pos.t } [@@deriving show]
+type const = { id : string; value : literal; pos : Pos.t } [@@deriving show, yojson]
 
-type 'v dep = V of 'v | Const of const [@@deriving show]
+type 'v dep = V of 'v | Const of const [@@deriving show, yojson]
 
 (* This code was taken from Noe and adapted to the 2025 var architecture *)
 let get_used_variables (e : 'v expression) :
@@ -601,7 +626,7 @@ let mk_atomlit_from_const lit constname pos =
   AtomLiteral (mk_lit_with_orig lit (Some (Mark (constname, pos))))
 
 module Error = struct
-  type typ = Anomaly | Discordance | Information [@@deriving show]
+  type typ = Anomaly | Discordance | Information [@@deriving show, yojson]
 
   let compare_typ e1 e2 =
     match (e1, e2) with
@@ -620,7 +645,7 @@ module Error = struct
     is_isf : string Pos.marked;
     typ : typ;
   }
-  [@@deriving show]
+  [@@deriving show, yojson]
 
   let pp_descr fmt err =
     Pp.fpr fmt "%s:%s:%s:%s:%s" (Pos.unmark err.famille)
@@ -632,6 +657,7 @@ module Error = struct
   let compare (err1 : t) (err2 : t) = compare err1.name err2.name
 
   type error_t = t
+  [@@deriving yojson]
 
   let error_pp = pp
 
@@ -640,6 +666,7 @@ module Error = struct
   module Set = struct
     include SetExt.Make (struct
       type t = error_t
+      [@@deriving yojson]
 
       let compare = error_compare
     end)
@@ -652,6 +679,7 @@ module Error = struct
   module Map = struct
     include MapExt.Make (struct
       type t = error_t
+      [@@deriving yojson]
 
       let compare = error_compare
     end)
@@ -663,28 +691,28 @@ module Error = struct
   end
 end
 
-type print_std = StdOut | StdErr [@@deriving show]
+type print_std = StdOut | StdErr [@@deriving show, yojson]
 
-type print_info = Name | Alias [@@deriving show]
+type print_info = Name | Alias [@@deriving show, yojson]
 
 type 'v print_arg =
   | PrintString of string
   | PrintAccess of print_info * 'v m_access
   | PrintIndent of 'v m_expression
   | PrintExpr of 'v m_expression * int * int
-[@@deriving show]
+[@@deriving show, yojson]
 
-type 'v formula_loop = 'v loop_variables Pos.marked [@@deriving show]
+type 'v formula_loop = 'v loop_variables Pos.marked [@@deriving show, yojson]
 
 type 'v formula_decl =
   | VarDecl of 'v access Pos.marked * 'v m_expression
   | EventFieldRef of 'v m_expression * string Pos.marked * int * 'v
-[@@deriving show]
+[@@deriving show, yojson]
 
 type 'v formula =
   | SingleFormula of 'v formula_decl
   | MultipleFormulaes of 'v formula_loop * 'v formula_decl
-[@@deriving show]
+[@@deriving show, yojson]
 
 type ('v, 'e) instruction =
   | Affectation of 'v formula Pos.marked
@@ -727,7 +755,7 @@ type ('v, 'e) instruction =
   | ExportErrors
   | FinalizeErrors
 
-and ('v, 'e) m_instruction = ('v, 'e) instruction Pos.marked [@@deriving show]
+and ('v, 'e) m_instruction = ('v, 'e) instruction Pos.marked [@@deriving show, yojson]
 
 type ('v, 'e) target = {
   target_name : string Pos.marked;
@@ -742,7 +770,7 @@ type ('v, 'e) target = {
   target_nb_refs : int;
   target_prog : ('v, 'e) m_instruction list;
 }
-[@@deriving show]
+[@@deriving show, yojson]
 
 let target_is_function t = t.target_result <> None
 

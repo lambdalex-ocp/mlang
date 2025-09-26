@@ -1,3 +1,8 @@
+module type Elt = sig
+  include Set.OrderedType
+  val to_yojson: t -> Json.t
+  val of_yojson: Json.t -> t Json.err
+end
 module type T = sig
   include Map.S
 
@@ -22,14 +27,22 @@ module type T = sig
 
   val pp_keys :
     ?sep:string -> ?pp_key:(Pp.t -> key -> unit) -> unit -> Pp.t -> 'a t -> unit
+
+  val to_yojson :
+('a -> Yojson.Safe.t) -> 'a t -> Yojson.Safe.t
+
+  val of_yojson :
+    (Json.t -> 'a Json.err) ->
+    Json.t ->
+    'a t Json.err
 end
 
 module Make =
 functor
-  (Ord : Map.OrderedType)
+  (Elt: Elt) 
   ->
   struct
-    include Map.Make (Ord)
+    include Map.Make (Elt)
 
     let card = cardinal
 
@@ -67,4 +80,35 @@ functor
     let pp_keys ?(sep = "; ") ?(pp_key = Pp.nil) (_ : unit) (fmt : Pp.t)
         (map : 'a t) : unit =
       pp ~sep ~pp_key ~assoc:"" Pp.nil fmt map
+
+    let to_yojson (of_val : 'a -> Yojson.Safe.t)
+        (t : 'a t) : Yojson.Safe.t =
+      let open Yojson.Safe in
+      let l = bindings t in
+      let l =
+        List.map
+          (fun (a, b) ->
+            let key = Elt.to_yojson a in
+            let value = of_val b in
+            let obj = `Assoc [ ("key", key); ("value", value) ] in
+            obj)
+          l
+      in
+      `List l
+
+    let of_yojson to_val (json : Json.t) =
+      match json with
+      | `List l ->
+          let f acc assoc =
+            match assoc with
+            | `Assoc [ (_, key); (_, value) ] -> (
+                let key = Elt.of_yojson key in
+                let value = to_val value in
+                match (acc, key, value) with
+                | Ok acc, Ok key, Ok value -> Ok (add key value acc)
+                | Error e, _, _ | _, Error e, _ | _, _, Error e -> Error e)
+            | _ -> Json.fmt_err "Wrong shape: expected `Assoc, got: " assoc
+          in
+          List.fold_left f (Ok empty) l
+      | _ -> Json.fmt_err "Could not parse map: " json
   end

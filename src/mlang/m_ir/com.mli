@@ -1,5 +1,6 @@
 module CatVar : sig
   type t = Input of StrSet.t | Computed of { is_base : bool }
+  [@@deriving yojson]
 
   val pp : Format.formatter -> t -> unit
 
@@ -14,6 +15,7 @@ module CatVar : sig
   end
 
   type loc = LocComputed | LocBase | LocInput
+  [@@deriving yojson]
 
   val pp_loc : Format.formatter -> loc -> unit
 
@@ -29,7 +31,7 @@ module CatVar : sig
     pos : Pos.t;
     attributs : Pos.t StrMap.t;
   }
-  [@@deriving show]
+  [@@deriving show, yojson]
 end
 
 (** Here are all the types a value can have. Date types don't seem to be used at
@@ -41,6 +43,7 @@ type value_typ =
   | DateMonth
   | Integer
   | Real
+[@@deriving yojson]
 
 type loc_tgv = {
   loc_cat : CatVar.loc;
@@ -50,16 +53,20 @@ type loc_tgv = {
   loc_cat_str : string;
   loc_cat_idx : int;
 }
+[@@deriving yojson]
 
 type loc_tmp = { loc_idx : int; loc_tab_idx : int; loc_cat_idx : int }
+[@@deriving yojson]
 
 type loc =
   | LocTgv of string * loc_tgv
   | LocTmp of string * loc_tmp
   | LocRef of string * int
+[@@deriving yojson]
 
 module Var : sig
   type id = int
+  [@@deriving yojson]
 
   type tgv = {
     table : t Array.t option;
@@ -79,7 +86,7 @@ module Var : sig
     id : id;
     loc : loc;
     scope : scope;
-  }
+  }[@@deriving yojson]
 
   val tgv : t -> tgv
 
@@ -172,7 +179,7 @@ module Var : sig
 end
 
 type event_field = { name : string Pos.marked; index : int; is_var : bool }
-[@@deriving show]
+[@@deriving show, yojson]
 
 type ('n, 'v) event_value = Numeric of 'n | RefVar of 'v
 
@@ -194,9 +201,9 @@ type 'a domain = {
   dom_used : int Pos.marked option;
 }
 
-type rule_domain_data = { rdom_computable : bool } [@@deriving show]
+type rule_domain_data = { rdom_computable : bool } [@@deriving show, yojson]
 
-type rule_domain = rule_domain_data domain [@@deriving show]
+type rule_domain = rule_domain_data domain [@@deriving show, yojson]
 
 type verif_domain_data = {
   vdom_auth : Pos.t CatVar.Map.t;
@@ -210,15 +217,15 @@ type variable_space = {
   vs_cats : CatVar.loc Pos.marked CatVar.LocMap.t;
   vs_by_default : bool;
 }
-[@@deriving show]
+[@@deriving show, yojson]
 
-type verif_domain = verif_domain_data domain [@@deriving show]
+type verif_domain = verif_domain_data domain [@@deriving show, yojson]
 
-type literal = Float of float | Undefined [@@deriving show]
+type literal = Float of float | Undefined [@@deriving show, yojson]
 
-type origin = string Pos.marked option [@@deriving show]
+type origin = string Pos.marked option [@@deriving show, yojson]
 
-type literal_with_orig = { lit : literal; origin : origin } [@@deriving show]
+type literal_with_orig = { lit : literal; origin : origin } [@@deriving show, yojson]
 
 (** Unary operators *)
 type unop = Not | Minus [@@deriving show]
@@ -322,7 +329,7 @@ and 'v expression =
   | NbInformatives
   | NbBloquantes
 
-and 'v m_expression = 'v expression Pos.marked [@@deriving show]
+and 'v m_expression = 'v expression Pos.marked [@@deriving show, yojson]
 
 type const = { id : string; value : literal; pos : Pos.t }
 
@@ -346,6 +353,7 @@ val mk_lit_from_const : literal -> string -> Pos.t -> 'v expression
 
 module Error : sig
   type typ = Anomaly | Discordance | Information
+  [@@deriving yojson]
 
   val compare_typ : typ -> typ -> int
 
@@ -358,6 +366,7 @@ module Error : sig
     is_isf : string Pos.marked;
     typ : typ;
   }
+  [@@deriving yojson]
 
   val pp_descr : Pp.t -> t -> unit
 
@@ -437,7 +446,7 @@ type ('v, 'e) instruction =
   | ExportErrors
   | FinalizeErrors
 
-and ('v, 'e) m_instruction = ('v, 'e) instruction Pos.marked [@@deriving show]
+and ('v, 'e) m_instruction = ('v, 'e) instruction Pos.marked [@@deriving show, yojson]
 
 type ('v, 'e) target = {
   target_name : string Pos.marked;
@@ -452,7 +461,7 @@ type ('v, 'e) target = {
   target_nb_refs : int;
   target_prog : ('v, 'e) m_instruction list;
 }
-[@@deriving show]
+[@@deriving show, yojson]
 
 val target_is_function : ('v, 'e) target -> bool
 

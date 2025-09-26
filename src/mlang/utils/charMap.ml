@@ -1,4 +1,8 @@
-include MapExt.Make (Char)
+include MapExt.Make (struct 
+  include Char
+  type t = char
+  [@@deriving yojson]
+end)
 
 module type T = MapExt.T with type key = char
 

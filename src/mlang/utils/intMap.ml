@@ -1,4 +1,7 @@
-include MapExt.Make (Int)
+include MapExt.Make (struct include Int 
+  type t = int
+  [@@deriving yojson]
+end)
 
 module type T = MapExt.T with type key = int
 

@@ -1,3 +1,8 @@
+module type Elt = sig
+  include Set.OrderedType
+  val to_yojson: t -> Json.t
+  val of_yojson: Json.t -> t Json.err
+end
 module type T = sig
   include Map.S
 
@@ -22,6 +27,14 @@ module type T = sig
 
   val pp_keys :
     ?sep:string -> ?pp_key:(Pp.t -> key -> unit) -> unit -> Pp.t -> 'a t -> unit
+
+  val to_yojson :
+    ('a -> Yojson.Safe.t) -> 'a t -> Yojson.Safe.t
+
+  val of_yojson :
+    (Json.t -> 'a Json.err) ->
+    Json.t ->
+    'a t Json.err
 end
 
-module Make : functor (Ord : Set.OrderedType) -> T with type key = Ord.t
+module Make : functor (Ord : Elt) -> T with type key = Ord.t

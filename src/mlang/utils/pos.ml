@@ -17,20 +17,20 @@
 
 exception ConflictingFilenames of string * string
 
-type ofst = { sofst : int; eofst : int } [@@deriving show]
+type ofst = { sofst : int; eofst : int } [@@deriving show, yojson]
 
 let make_ofst sofst eofst = { sofst; eofst }
 
-type lexing_pos = [%import: Lexing.position] [@@deriving show]
+type lexing_pos = [%import: Lexing.position] [@@deriving show, yojson]
 
 type t = {
   pos_filename : string;
-  pos_loc : Lexing.position * Lexing.position;
+  pos_loc : lexing_pos * lexing_pos;
       [@printer
         fun fmt (a, b) ->
           Format.fprintf fmt "(%a,%a)" pp_lexing_pos a pp_lexing_pos b]
   pos_ofst : ofst;
-}
+} [@@deriving yojson]
 
 let pp fmt _ = Format.fprintf fmt "pos-info"
 
@@ -96,7 +96,7 @@ let format fmt (pos : t) =
 
 (** Everything related to the source code should keep its t stored, to improve
     error messages *)
-type 'a marked = Mark of 'a * t [@@deriving show]
+type 'a marked = Mark of 'a * t [@@deriving show, yojson]
 
 (** Placeholder t *)
 let none : t =

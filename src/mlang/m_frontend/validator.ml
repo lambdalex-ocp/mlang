@@ -423,6 +423,7 @@ type call_compute =
   | CallVerifs of string * Com.DomainId.t * string option
   | CallChaining of string * string * string option
   | CallTarget of string * string option
+  [@@deriving yojson]
 
 let compare_call_compute cc0 cc1 =
   let cons_to_int = function
@@ -458,6 +459,7 @@ let pp_call_compute fmt = function
 module CallMap = struct
   include MapExt.Make (struct
     type t = call_compute
+    [@@deriving yojson]
 
     let compare = compare_call_compute
   end)
@@ -3042,6 +3044,7 @@ let vdom_rule_filter (prog : program) (vdom : Com.verif_domain_data Com.domain)
 
 module OrdVerif = struct
   type t = int * int * int
+  [@@deriving yojson]
 
   let make v =
     let iBlock = if v.verif_is_blocking then 0 else 1 in
@@ -3050,6 +3053,7 @@ module OrdVerif = struct
   let get_id (_, _, id) = id
 
   let compare x y = compare x y
+
 end
 
 module OrdVerifSet = struct
