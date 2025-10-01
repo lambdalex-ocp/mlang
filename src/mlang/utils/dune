@@ -37,8 +37,8 @@
  (package mlang)
  (flags
   (:standard -open Utils_common))
- (modules cli file dgfip_options)
+ (modules cli file dgfip_options log)
  (preprocess
   (pps ppx_deriving.show))
  (libraries utils_common dune-build-info)
- (virtual_modules cli file dgfip_options))
+ (virtual_modules cli file dgfip_options log))

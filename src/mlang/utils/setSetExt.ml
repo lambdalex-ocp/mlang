@@ -16,8 +16,9 @@ module type T = sig
     t ->
     unit
 
-    val to_yojson : t -> Json.t
-    val of_yojson : Json.t -> t Json.err
+  val to_yojson : t -> Json.t
+
+  val of_yojson : Json.t -> t Json.err
 end
 
 module Make =

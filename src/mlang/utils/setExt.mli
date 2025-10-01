@@ -1,8 +1,11 @@
 module type Elt = sig
   include Set.OrderedType
+
   val to_yojson : t -> Json.t
+
   val of_yojson : Json.t -> t Json.err
 end
+
 module type T = sig
   include Set.S
 

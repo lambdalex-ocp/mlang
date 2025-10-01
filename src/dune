@@ -27,7 +27,11 @@
 
 (executable
  (name js_main)
- (modes js)
- (preprocess
-  (pps js_of_ocaml-ppx))
+ ; (modes js)
+ (flags
+  (:standard -g))
+ (js_of_ocaml
+  (flags --source-map))
+ ; (preprocess
+ ;  (pps js_of_ocaml-ppx))
  (libraries m_ir mlang js_of_ocaml-lwt platform_js zarith_stubs_js))

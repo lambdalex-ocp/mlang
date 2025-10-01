@@ -14,8 +14,7 @@ module CatVar : sig
     val from_string_list : string Pos.marked list Pos.marked -> Pos.t t
   end
 
-  type loc = LocComputed | LocBase | LocInput
-  [@@deriving yojson]
+  type loc = LocComputed | LocBase | LocInput [@@deriving yojson]
 
   val pp_loc : Format.formatter -> loc -> unit
 
@@ -65,8 +64,7 @@ type loc =
 [@@deriving yojson]
 
 module Var : sig
-  type id = int
-  [@@deriving yojson]
+  type id = int [@@deriving yojson]
 
   type tgv = {
     table : t Array.t option;
@@ -86,7 +84,8 @@ module Var : sig
     id : id;
     loc : loc;
     scope : scope;
-  }[@@deriving yojson]
+  }
+  [@@deriving yojson]
 
   val tgv : t -> tgv
 
@@ -225,7 +224,8 @@ type literal = Float of float | Undefined [@@deriving show, yojson]
 
 type origin = string Pos.marked option [@@deriving show, yojson]
 
-type literal_with_orig = { lit : literal; origin : origin } [@@deriving show, yojson]
+type literal_with_orig = { lit : literal; origin : origin }
+[@@deriving show, yojson]
 
 (** Unary operators *)
 type unop = Not | Minus [@@deriving show]
@@ -352,8 +352,7 @@ val mk_lit_from_const : literal -> string -> Pos.t -> 'v expression
     the name of the const as origin *)
 
 module Error : sig
-  type typ = Anomaly | Discordance | Information
-  [@@deriving yojson]
+  type typ = Anomaly | Discordance | Information [@@deriving yojson]
 
   val compare_typ : typ -> typ -> int
 
@@ -446,7 +445,8 @@ type ('v, 'e) instruction =
   | ExportErrors
   | FinalizeErrors
 
-and ('v, 'e) m_instruction = ('v, 'e) instruction Pos.marked [@@deriving show, yojson]
+and ('v, 'e) m_instruction = ('v, 'e) instruction Pos.marked
+[@@deriving show, yojson]
 
 type ('v, 'e) target = {
   target_name : string Pos.marked;

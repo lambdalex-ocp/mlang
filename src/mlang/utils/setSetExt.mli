@@ -17,8 +17,8 @@ module type T = sig
     unit
 
   val to_yojson : t -> Json.t
-  val of_yojson : Json.t -> t Json.err
 
+  val of_yojson : Json.t -> t Json.err
 end
 
 module Make : functor (SetElt : SetExt.T) ->

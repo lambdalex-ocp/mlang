@@ -71,6 +71,7 @@ type program = {
   program_main_target : string;
   program_stats : stats;
 }
+[@@deriving yojson]
 
 val find_var_name_by_alias : program -> string Pos.marked -> string
 

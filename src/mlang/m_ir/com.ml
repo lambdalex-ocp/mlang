@@ -2,7 +2,7 @@ module CatVar = struct
   type t =
     | Input of StrSet.t [@printer StrSet.pp_deriving Format.pp_print_string]
     | Computed of { is_base : bool }
-    [@@deriving show, yojson]
+  [@@deriving show, yojson]
 
   let pp fmt = function
     | Input id ->
@@ -18,8 +18,7 @@ module CatVar = struct
     | Input id0, Input id1 -> StrSet.compare id0 id1
     | Computed c0, Computed c1 -> compare c0.is_base c1.is_base
 
-  type cat_var_t = t
-  [@@deriving yojson]
+  type cat_var_t = t [@@deriving yojson]
 
   let cat_var_pp = pp
 
@@ -27,8 +26,7 @@ module CatVar = struct
 
   module Set = struct
     include SetExt.Make (struct
-      type t = cat_var_t
-      [@@deriving yojson]
+      type t = cat_var_t [@@deriving yojson]
 
       let compare = cat_var_compare
     end)
@@ -40,8 +38,7 @@ module CatVar = struct
 
   module Map = struct
     include MapExt.Make (struct
-      type t = cat_var_t
-      [@@deriving yojson]
+      type t = cat_var_t [@@deriving yojson]
 
       let compare = cat_var_compare
     end)
@@ -81,8 +78,7 @@ module CatVar = struct
 
   module LocSet = struct
     include SetExt.Make (struct
-      type t = loc
-      [@@deriving yojson]
+      type t = loc [@@deriving yojson]
 
       let compare = Stdlib.compare
     end)
@@ -94,8 +90,7 @@ module CatVar = struct
 
   module LocMap = struct
     include MapExt.Make (struct
-      type t = loc
-      [@@deriving yojson]
+      type t = loc [@@deriving yojson]
 
       let compare = Stdlib.compare
     end)
@@ -149,13 +144,14 @@ type loc =
 
 module Array = struct
   include Array
+
   let to_yojson _ = assert false
+
   let of_yojson _ = assert false
 end
 
 module Var = struct
-  type id = int
-  [@@deriving yojson]
+  type id = int [@@deriving yojson]
 
   let id_cpt = ref 0
 
@@ -322,7 +318,6 @@ module Var = struct
     }
 
   let new_tgv ~(name : string Pos.marked) ~(table : t Array.t option)
-
       ~(is_given_back : bool) ~(alias : string Pos.marked option)
       ~(descr : string Pos.marked) ~(attrs : int Pos.marked StrMap.t)
       ~(cat : CatVar.t) ~(typ : value_typ option) : t =
@@ -359,8 +354,7 @@ module Var = struct
 
   let pp fmt (v : t) = Format.fprintf fmt "(%d)%s" v.id (Pos.unmark v.name)
 
-  type t_var = t
-  [@@deriving yojson]
+  type t_var = t [@@deriving yojson]
 
   let pp_var = pp
 
@@ -368,8 +362,7 @@ module Var = struct
 
   module Set = struct
     include SetExt.Make (struct
-      type t = t_var
-      [@@deriving yojson]
+      type t = t_var [@@deriving yojson]
 
       let compare = compare_var
     end)
@@ -381,8 +374,7 @@ module Var = struct
 
   module Map = struct
     include MapExt.Make (struct
-      type t = t_var
-      [@@deriving yojson]
+      type t = t_var [@@deriving yojson]
 
       let compare = compare_var
     end)
@@ -422,7 +414,6 @@ module DomainIdMap = struct
   module type T = MapExt.T with type key = DomainId.t
 
   let pp ?(sep = ", ") ?(pp_key = DomainId.pp ()) ?(assoc = " => ")
-      
       (pp_val : Format.formatter -> 'a -> unit) (fmt : Format.formatter)
       (map : 'a t) : unit =
     pp ~sep ~pp_key ~assoc pp_val fmt map
@@ -471,7 +462,8 @@ type literal = Float of float | Undefined [@@deriving show, yojson]
 
 type origin = string Pos.marked option [@@deriving show, yojson]
 
-type literal_with_orig = { lit : literal; origin : origin } [@@deriving show, yojson]
+type literal_with_orig = { lit : literal; origin : origin }
+[@@deriving show, yojson]
 
 (** Unary operators *)
 type unop = Not | Minus [@@deriving show, yojson]
@@ -564,7 +556,8 @@ and 'v expression =
 
 and 'v m_expression = 'v expression Pos.marked [@@deriving show, yojson]
 
-type const = { id : string; value : literal; pos : Pos.t } [@@deriving show, yojson]
+type const = { id : string; value : literal; pos : Pos.t }
+[@@deriving show, yojson]
 
 type 'v dep = V of 'v | Const of const [@@deriving show, yojson]
 
@@ -656,8 +649,7 @@ module Error = struct
 
   let compare (err1 : t) (err2 : t) = compare err1.name err2.name
 
-  type error_t = t
-  [@@deriving yojson]
+  type error_t = t [@@deriving yojson]
 
   let error_pp = pp
 
@@ -665,8 +657,7 @@ module Error = struct
 
   module Set = struct
     include SetExt.Make (struct
-      type t = error_t
-      [@@deriving yojson]
+      type t = error_t [@@deriving yojson]
 
       let compare = error_compare
     end)
@@ -678,8 +669,7 @@ module Error = struct
 
   module Map = struct
     include MapExt.Make (struct
-      type t = error_t
-      [@@deriving yojson]
+      type t = error_t [@@deriving yojson]
 
       let compare = error_compare
     end)
@@ -755,7 +745,8 @@ type ('v, 'e) instruction =
   | ExportErrors
   | FinalizeErrors
 
-and ('v, 'e) m_instruction = ('v, 'e) instruction Pos.marked [@@deriving show, yojson]
+and ('v, 'e) m_instruction = ('v, 'e) instruction Pos.marked
+[@@deriving show, yojson]
 
 type ('v, 'e) target = {
   target_name : string Pos.marked;

@@ -35,10 +35,10 @@ end
 
 module Make =
 functor
-  (Ord : Set.OrderedType)
+  (Elt : Elt)
   ->
   struct
-    include Set.Make (Ord)
+    include Set.Make (Elt)
 
     let card = cardinal
 
@@ -68,15 +68,10 @@ functor
       pp ~pp_elt () fmt t;
       Format.fprintf fmt "}"
 
-    let elt_to_yojson _elt = `Null
-
     let to_yojson t =
-      let f t acc = elt_to_yojson t :: acc in
+      let f t acc = Elt.to_yojson t :: acc in
       let l = fold f t [] in
       `List l
-
-    let elt_of_yojson _json =
-      Error "Unspecified transformation function in elt_of_yojson"
 
     let of_yojson json =
       let open Yojson.Safe in
@@ -86,7 +81,7 @@ functor
             match acc with
             | Error _ -> acc
             | Ok set -> (
-                let elt = elt_of_yojson elt in
+                let elt = Elt.of_yojson elt in
                 match elt with
                 | Ok elt -> Ok (add elt set)
                 | Error error -> Error error)

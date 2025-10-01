@@ -30,7 +30,8 @@ type t = {
         fun fmt (a, b) ->
           Format.fprintf fmt "(%a,%a)" pp_lexing_pos a pp_lexing_pos b]
   pos_ofst : ofst;
-} [@@deriving yojson]
+}
+[@@deriving yojson]
 
 let pp fmt _ = Format.fprintf fmt "pos-info"
 

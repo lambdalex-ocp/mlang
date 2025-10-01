@@ -2,7 +2,7 @@
 
 (library
  (name platform_js)
- (modules cli file dgfip_options)
+ (modules cli file dgfip_options log)
  (flags
   (:standard -open Utils_common))
  (libraries utils_common)

@@ -4,7 +4,8 @@
  (public_name mlang)
  (flags
   (:standard -open Utils -open M_ir))
- (preprocess (pps ppx_deriving_yojson))
+ (preprocess
+  (pps ppx_deriving_yojson))
  (libraries
   re
   ANSITerminal

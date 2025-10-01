@@ -34,7 +34,8 @@ type m_expression = expression Pos.marked [@@deriving show, yojson]
     also adopt a more lambda-calculus-compatible model with functions used to
     model tables. *)
 
-type instruction = (Com.Var.t, Com.Error.t) Com.instruction [@@deriving show, yojson]
+type instruction = (Com.Var.t, Com.Error.t) Com.instruction
+[@@deriving show, yojson]
 
 type m_instruction = instruction Pos.marked [@@deriving show, yojson]
 
@@ -344,7 +345,10 @@ let expand_functions (p : program) : program =
   let program_functions = update_instrs p.program_functions in
   let program_targets = update_instrs p.program_targets in
   let return = { p with program_functions; program_targets } in
-  let out = open_out "program_dump.txt" in
-  let fmt = Format.formatter_of_out_channel out in
-  Format.fprintf fmt "%a@." pp_program return;
+  (* let out = open_out "program_dump.txt" in *)
+  (* let fmt = Format.formatter_of_out_channel out in *)
+  (* Format.fprintf fmt "%a@." pp_program return; *)
+  let out = open_out "program_dump.json" in
+  let json = program_to_yojson return in
+  Yojson.Safe.pretty_to_channel out json;
   return
