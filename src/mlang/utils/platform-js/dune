@@ -5,5 +5,7 @@
  (modules cli file dgfip_options log)
  (flags
   (:standard -open Utils_common))
- (libraries utils_common)
+ (preprocess
+  (pps js_of_ocaml-ppx))
+ (libraries utils_common js_of_ocaml)
  (implements platform))
