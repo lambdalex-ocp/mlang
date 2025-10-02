@@ -1,6 +1,10 @@
 open M_ir
 open Utils
+open Js_of_ocaml
 module Interp = M_ir.Mir_interpreter
+
+let hello () =
+  Platform.Log.log "hello c:"
 
 let exec_program json =
   let module Interp = Interp.FloatDefInterp in
@@ -12,3 +16,12 @@ let exec_program json =
   in
   let ctx = Interp.empty_ctx program false in
   Interp.evaluate_program ctx
+
+let obj = object%js
+  method hello = hello
+  method exec_program = exec_program
+end
+
+let _ =
+  Js.export "mlang" obj
+
