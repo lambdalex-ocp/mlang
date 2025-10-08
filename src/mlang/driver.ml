@@ -91,11 +91,8 @@ let patch_rule_1 (backend : Config.backend)
          | _ -> m_item))
     program
 
-let parse () =
-  let current_progress, finish = Cli.create_progress_bar "Parsing" in
-
-  let parse filebuf source_file =
-    current_progress source_file;
+module Parsing = struct
+  let parse_lexbuf filebuf source_file =
     let lex_curr_p = { filebuf.lex_curr_p with pos_fname = source_file } in
     let filebuf = { filebuf with lex_curr_p } in
     match Mparser.source_file token filebuf with
@@ -110,48 +107,51 @@ let parse () =
         in
         Errors.raise_spanned_error "M syntax error"
           (Parse_utils.mk_position loc)
-  in
 
   let parse_file source_file =
     let input = open_in source_file in
     let filebuf = Lexing.from_channel input in
     try
-      parse filebuf source_file
+      parse_lexbuf filebuf source_file
       (* We're catching exceptions to properly close the input channel *)
     with Errors.StructuredError _ as e ->
       close_in input;
       raise e
-  in
 
-  let parse_m_dgfip m_program =
+  let parse_m_dgfip current_progress m_program =
     let parse_internal str =
       let filebuf = Lexing.from_string str in
       let source_file = Dgfip_m.internal_m in
-      parse filebuf source_file
+      current_progress source_file;
+      parse_lexbuf filebuf source_file
     in
     let decs = parse_internal Dgfip_m.declarations in
     let events = parse_internal Dgfip_m.event_declaration in
     events :: decs :: m_program
-  in
 
-  let parse_m_files m_program =
+  let parse_m_files files current_progress m_program =
     let parse_file_progress source_file =
       current_progress source_file;
       parse_file source_file
     in
     (*FIXME: use a fold here *)
     let prog =
-      List.map parse_file_progress @@ Config.get_files !Config.source_files
+      List.map parse_file_progress files
     in
     List.rev prog @ m_program
-  in
 
-  let m_program =
-    [] |> parse_m_dgfip |> parse_m_files |> List.rev
-    |> patch_rule_1 !Config.backend !Config.dgfip_flags
-  in
-  finish "completed!";
-  m_program
+  let parse files progress_bar =
+    let current_progress, finish = progress_bar in
+    let m_program =
+      []
+      |> parse_m_dgfip current_progress
+      |> parse_m_files files current_progress
+      |> List.rev
+      |> patch_rule_1 !Config.backend !Config.dgfip_flags
+    in
+    finish "completed!";
+    m_program
+end
 
 (** Entry function for the executable. Returns a negative number in case of
     error. *)
@@ -266,7 +266,9 @@ let extract m_program =
 let driver () =
   try
     Cli.debug_print "Reading M files...";
-    let m_program = parse () in
+    let progress_bar  = Cli.create_progress_bar "Parsing" in
+    let files = Config.get_files !Config.source_files in
+    let m_program = Parsing.parse files progress_bar in
     Cli.debug_print "Elaborating...";
     let m_program = Expander.proceed m_program in
     let m_program = Validator.proceed !Config.mpp_function m_program in
