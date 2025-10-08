@@ -19,7 +19,7 @@ let exec_program json =
 
 let obj = object%js
   method hello = hello
-  method exec_program = exec_program
+  method execProgram = exec_program
 end
 
 let _ =
