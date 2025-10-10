@@ -229,24 +229,25 @@ struct
           let info = StrMap.fold add_to_map p.program_vars dbg_info.info in
           Some { dbg_info with info }
     in
-    let ctx_ics = match dbg_flag with
-    | false -> StrMap.empty
-    | true ->
-      let targets = StrMap.bindings p.program_targets |> List.map snd in
-      let filepaths =
-        List.filter_map (fun t -> t.Com.target_filepath) targets
-      in
-      let filepath_set = StrSet.of_list filepaths in
-      StrSet.fold
-        (fun path map ->
-          Log.log "before i plante";
-          let ic = open_in path in
-          Log.log "after i plante";
-          let contents = In_channel.input_all ic in
-          let map = StrMap.add path contents map in
-          In_channel.close ic;
-          map)
-        filepath_set StrMap.empty
+    let ctx_ics =
+      match dbg_flag with
+      | false -> StrMap.empty
+      | true ->
+          let targets = StrMap.bindings p.program_targets |> List.map snd in
+          let filepaths =
+            List.filter_map (fun t -> t.Com.target_filepath) targets
+          in
+          let filepath_set = StrSet.of_list filepaths in
+          StrSet.fold
+            (fun path map ->
+              Log.log "before i plante";
+              let ic = open_in path in
+              Log.log "after i plante";
+              let contents = In_channel.input_all ic in
+              let map = StrMap.add path contents map in
+              In_channel.close ic;
+              map)
+            filepath_set StrMap.empty
     in
     {
       ctx_prog = p;
@@ -561,7 +562,6 @@ struct
         match ctx.ctx_dbg_info with
         | None -> ()
         | Some dbg_info ->
-            Log.log "blog";
             let open Dbg_info in
             let name = Com.Var.name_str v in
             let lit = value_to_literal value in
