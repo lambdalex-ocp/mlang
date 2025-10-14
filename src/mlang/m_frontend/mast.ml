@@ -25,6 +25,7 @@
 (**{2 Names}*)
 
 type application = string
+[@@deriving yojson]
 (** Applications are rule annotations. The 3 main DGFiP applications seem to be:
 
     - [batch]: deprecated, used to compute the income tax but not anymore;
@@ -32,17 +33,21 @@ type application = string
     - [iliad]: usage unkown, much bigger than [bareme]. *)
 
 type chaining = string
+[@@deriving yojson]
 (** "enchaineur" in the M source code, utility unknown *)
 
 type func_name = string
+[@@deriving yojson]
 (** Func names are just string for the moment *)
 
 type error_name = string
+[@@deriving yojson]
 (** Ununsed for now *)
 
 (**{2 Literals}*)
 
 type table_size = LiteralSize of int | SymbolSize of string
+[@@deriving yojson]
 
 let get_table_size = function
   | LiteralSize i -> i
@@ -56,10 +61,12 @@ let get_table_size_opt = function
 (**{2 Expressions}*)
 
 type var_category_id = string Pos.marked list Pos.marked
+[@@deriving yojson]
 
 type set_value = Com.m_var_name Com.set_value
 
 type expression = Com.m_var_name Com.expression
+[@@deriving yojson]
 
 type m_expression = expression Pos.marked
 
@@ -71,8 +78,10 @@ type m_expression = expression Pos.marked
     one or several variables. *)
 
 type instruction = (Com.m_var_name, error_name) Com.instruction
+[@@deriving yojson]
 
 type m_instruction = instruction Pos.marked
+[@@deriving yojson]
 
 type rule = {
   rule_number : int Pos.marked;
@@ -83,6 +92,7 @@ type rule = {
   rule_formulaes : instruction Pos.marked list;
       (** A rule can contain many variable definitions *)
 }
+[@@deriving yojson]
 
 type target = {
   target_name : string Pos.marked;
@@ -93,6 +103,7 @@ type target = {
   target_tmp_vars : (string Pos.marked * table_size Pos.marked option) list;
   target_prog : m_instruction list;
 }
+[@@deriving yojson]
 
 type 'a domain_decl = {
   dom_names : string Pos.marked list Pos.marked list;
@@ -100,10 +111,13 @@ type 'a domain_decl = {
   dom_by_default : bool;
   dom_data : 'a;
 }
+[@@deriving yojson]
 
 type rule_domain_data = { rdom_computable : bool }
+[@@deriving yojson]
 
 type rule_domain_decl = rule_domain_data domain_decl
+[@@deriving yojson]
 
 (**{2 Variable declaration}*)
 
@@ -116,6 +130,7 @@ type rule_domain_decl = rule_domain_data domain_decl
 (**{3 Input variables}*)
 
 type variable_attribute = string Pos.marked * int Pos.marked
+[@@deriving yojson]
 
 type input_variable = {
   input_name : string Pos.marked;
@@ -125,7 +140,7 @@ type input_variable = {
   input_is_givenback : bool;
   input_description : string Pos.marked;
   input_typ : Com.value_typ Pos.marked option;
-}
+} [@@deriving yojson]
 
 type computed_variable = {
   comp_name : string Pos.marked;
@@ -136,21 +151,24 @@ type computed_variable = {
   comp_typ : Com.value_typ Pos.marked option;
   comp_is_givenback : bool;
   comp_description : string Pos.marked;
-}
+} [@@deriving yojson]
 
 type variable_decl =
   | ComputedVar of computed_variable Pos.marked
   | ConstVar of string Pos.marked * Com.m_var_name Com.atom Pos.marked
       (** The literal is the constant value *)
   | InputVar of input_variable Pos.marked
+[@@deriving yojson]
 
 type var_type = Input | Computed
+[@@deriving yojson]
 
 type var_category_decl = {
   var_type : var_type;
   var_category : string Pos.marked list;
   var_attributes : string Pos.marked list;
 }
+[@@deriving yojson]
 
 (* standard categories *)
 let input_category = "saisie"
@@ -171,6 +189,7 @@ type verification_condition = {
   verif_cond_error : error_name Pos.marked * string Pos.marked option;
       (** A verification condition error can ba associated to a variable *)
 }
+[@@deriving yojson]
 
 type verification = {
   verif_number : int Pos.marked;
@@ -179,19 +198,23 @@ type verification = {
       (** Verification conditions are application-specific *)
   verif_conditions : verification_condition Pos.marked list;
 }
+[@@deriving yojson]
 
 type verif_domain_data = {
   vdom_auth : var_category_id list;
   vdom_verifiable : bool;
 }
+[@@deriving yojson]
 
 type verif_domain_decl = verif_domain_data domain_decl
+[@@deriving yojson]
 
 type error_ = {
   error_name : error_name Pos.marked;
   error_typ : Com.Error.typ Pos.marked;
   error_descr : string Pos.marked list;
 }
+[@@deriving yojson]
 
 (**{1 M programs}*)
 
@@ -211,9 +234,12 @@ type source_file_item =
   | RuleDomDecl of rule_domain_decl
   | VerifDomDecl of verif_domain_decl
   | VariableSpaceDecl of Com.variable_space
+[@@deriving yojson]
 
 (* TODO: parse something here *)
 
 type source_file = source_file_item Pos.marked list
+[@@deriving yojson]
 
 type program = source_file list
+[@@deriving yojson]

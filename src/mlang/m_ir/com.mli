@@ -198,7 +198,7 @@ type 'a domain = {
   dom_rov : IntSet.t;
   dom_data : 'a;
   dom_used : int Pos.marked option;
-}
+} [@@deriving yojson]
 
 type rule_domain_data = { rdom_computable : bool } [@@deriving show, yojson]
 
@@ -208,7 +208,7 @@ type verif_domain_data = {
   vdom_auth : Pos.t CatVar.Map.t;
   vdom_verifiable : bool;
 }
-[@@deriving show]
+[@@deriving show, yojson]
 
 type variable_space = {
   vs_id : int;
@@ -272,6 +272,7 @@ type var_name_generic = { base : string; parameters : char list }
 type var_name = Normal of string | Generic of var_name_generic
 
 type m_var_name = var_name Pos.marked
+[@@deriving yojson]
 
 type var_space = (m_var_name * int) option
 
