@@ -1,1 +1,1 @@
-val log : string -> unit
+val log : 'a -> unit
