@@ -1,4 +1,5 @@
 (* cli.ml *)
+open Js_of_ocaml
 
 (**{2 Command line arguments parsing}*)
 
@@ -17,7 +18,7 @@ module Cmdliner = struct
     type 'a t = unit
 
     let eval ?help:(_ = Format.std_formatter) ?err:(_ = Format.std_formatter)
-        ?catch:(_ = true) ?env:(_ = fun _ -> None) ?argv:(_ = Sys.argv)
+        ?catch:(_ = true) ?env:(_ = fun _ -> None) ?argv:(_ = [||])
         ?term_err:(_ = 1) (_ : unit t) : Exit.code =
       assert false
 
@@ -80,14 +81,14 @@ let var_info_print (_ : ('a, Format.formatter, unit, unit) format4) : 'a =
   assert false
 
 let debug_print ?(endline = "\n")
-    (_ : ('a, Format.formatter, unit, unit) format4) : 'a =
-  assert false
+    (kont : ('a, Format.formatter, unit, unit) format4) : 'a =
+  Format.kasprintf (fun s -> Console.console##log s) kont
 
-let warning_print (_ : ('a, Format.formatter, unit, unit) format4) : 'a =
-  assert false
+let warning_print (kont : ('a, Format.formatter, unit, unit) format4) : 'a =
+  Format.kasprintf (fun s -> Console.console##warn s) kont
 
-let error_print (_ : ('a, Format.formatter, unit, unit) format4) : 'a =
-  assert false
+let error_print (kont : ('a, Format.formatter, unit, unit) format4) : 'a =
+  Format.kasprintf (fun s -> Console.console##error s) kont
 
 let result_print (_ : ('a, Format.formatter, unit, unit) format4) : 'a =
   assert false
@@ -95,4 +96,6 @@ let result_print (_ : ('a, Format.formatter, unit, unit) format4) : 'a =
 let create_progress_bar (_ : string) : (string -> unit) * (string -> unit) =
   assert false
 
-let retrieve_loc_text (_ : Pos.t) : string = assert false
+let retrieve_loc_text (_ : Pos.t) : string = 
+  Console.console##log "retrieve loc text!";
+  assert false
