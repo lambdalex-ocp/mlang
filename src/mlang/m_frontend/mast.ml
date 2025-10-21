@@ -24,24 +24,20 @@
 
 (**{2 Names}*)
 
-type application = string
-[@@deriving yojson]
+type application = string [@@deriving yojson]
 (** Applications are rule annotations. The 3 main DGFiP applications seem to be:
 
     - [batch]: deprecated, used to compute the income tax but not anymore;
     - [bareme]: seems to compute the income tax;
     - [iliad]: usage unkown, much bigger than [bareme]. *)
 
-type chaining = string
-[@@deriving yojson]
+type chaining = string [@@deriving yojson]
 (** "enchaineur" in the M source code, utility unknown *)
 
-type func_name = string
-[@@deriving yojson]
+type func_name = string [@@deriving yojson]
 (** Func names are just string for the moment *)
 
-type error_name = string
-[@@deriving yojson]
+type error_name = string [@@deriving yojson]
 (** Ununsed for now *)
 
 (**{2 Literals}*)
@@ -60,13 +56,11 @@ let get_table_size_opt = function
 
 (**{2 Expressions}*)
 
-type var_category_id = string Pos.marked list Pos.marked
-[@@deriving yojson]
+type var_category_id = string Pos.marked list Pos.marked [@@deriving yojson]
 
 type set_value = Com.m_var_name Com.set_value
 
-type expression = Com.m_var_name Com.expression
-[@@deriving yojson]
+type expression = Com.m_var_name Com.expression [@@deriving yojson]
 
 type m_expression = expression Pos.marked
 
@@ -80,8 +74,7 @@ type m_expression = expression Pos.marked
 type instruction = (Com.m_var_name, error_name) Com.instruction
 [@@deriving yojson]
 
-type m_instruction = instruction Pos.marked
-[@@deriving yojson]
+type m_instruction = instruction Pos.marked [@@deriving yojson]
 
 type rule = {
   rule_number : int Pos.marked;
@@ -113,11 +106,9 @@ type 'a domain_decl = {
 }
 [@@deriving yojson]
 
-type rule_domain_data = { rdom_computable : bool }
-[@@deriving yojson]
+type rule_domain_data = { rdom_computable : bool } [@@deriving yojson]
 
-type rule_domain_decl = rule_domain_data domain_decl
-[@@deriving yojson]
+type rule_domain_decl = rule_domain_data domain_decl [@@deriving yojson]
 
 (**{2 Variable declaration}*)
 
@@ -129,8 +120,7 @@ type rule_domain_decl = rule_domain_data domain_decl
 
 (**{3 Input variables}*)
 
-type variable_attribute = string Pos.marked * int Pos.marked
-[@@deriving yojson]
+type variable_attribute = string Pos.marked * int Pos.marked [@@deriving yojson]
 
 type input_variable = {
   input_name : string Pos.marked;
@@ -140,7 +130,8 @@ type input_variable = {
   input_is_givenback : bool;
   input_description : string Pos.marked;
   input_typ : Com.value_typ Pos.marked option;
-} [@@deriving yojson]
+}
+[@@deriving yojson]
 
 type computed_variable = {
   comp_name : string Pos.marked;
@@ -151,7 +142,8 @@ type computed_variable = {
   comp_typ : Com.value_typ Pos.marked option;
   comp_is_givenback : bool;
   comp_description : string Pos.marked;
-} [@@deriving yojson]
+}
+[@@deriving yojson]
 
 type variable_decl =
   | ComputedVar of computed_variable Pos.marked
@@ -160,8 +152,7 @@ type variable_decl =
   | InputVar of input_variable Pos.marked
 [@@deriving yojson]
 
-type var_type = Input | Computed
-[@@deriving yojson]
+type var_type = Input | Computed [@@deriving yojson]
 
 type var_category_decl = {
   var_type : var_type;
@@ -206,8 +197,7 @@ type verif_domain_data = {
 }
 [@@deriving yojson]
 
-type verif_domain_decl = verif_domain_data domain_decl
-[@@deriving yojson]
+type verif_domain_decl = verif_domain_data domain_decl [@@deriving yojson]
 
 type error_ = {
   error_name : error_name Pos.marked;
@@ -238,8 +228,6 @@ type source_file_item =
 
 (* TODO: parse something here *)
 
-type source_file = source_file_item Pos.marked list
-[@@deriving yojson]
+type source_file = source_file_item Pos.marked list [@@deriving yojson]
 
-type program = source_file list
-[@@deriving yojson]
+type program = source_file list [@@deriving yojson]

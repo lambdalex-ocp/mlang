@@ -198,7 +198,8 @@ type 'a domain = {
   dom_rov : IntSet.t;
   dom_data : 'a;
   dom_used : int Pos.marked option;
-} [@@deriving yojson]
+}
+[@@deriving yojson]
 
 type rule_domain_data = { rdom_computable : bool } [@@deriving show, yojson]
 
@@ -271,8 +272,7 @@ type var_name_generic = { base : string; parameters : char list }
 (** A variable is either generic (with loop parameters) or normal *)
 type var_name = Normal of string | Generic of var_name_generic
 
-type m_var_name = var_name Pos.marked
-[@@deriving yojson]
+type m_var_name = var_name Pos.marked [@@deriving yojson]
 
 type var_space = (m_var_name * int) option
 

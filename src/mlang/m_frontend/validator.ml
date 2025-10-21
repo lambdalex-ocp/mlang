@@ -381,17 +381,16 @@ module Err = struct
     Errors.raise_spanned_error msg cat_pos
 end
 
-type syms = Com.DomainId.t Pos.marked Com.DomainIdMap.t
-[@@deriving yojson]
+type syms = Com.DomainId.t Pos.marked Com.DomainIdMap.t [@@deriving yojson]
 
-type 'a doms = 'a Com.domain Com.DomainIdMap.t
-[@@deriving yojson]
+type 'a doms = 'a Com.domain Com.DomainIdMap.t [@@deriving yojson]
 
 type chaining = {
   chain_name : string Pos.marked;
   chain_apps : Pos.t StrMap.t;
   chain_rules : Com.rule_domain Pos.marked IntMap.t;
-} [@@deriving yojson]
+}
+[@@deriving yojson]
 
 type rule = {
   rule_id : int Pos.marked;
@@ -403,7 +402,8 @@ type rule = {
   rule_in_vars : StrSet.t;
   rule_out_vars : Pos.t StrMap.t;
   rule_seq : int;
-} [@@deriving yojson]
+}
+[@@deriving yojson]
 
 type verif = {
   verif_id : int Pos.marked;
@@ -416,10 +416,10 @@ type verif = {
   verif_cat_var_stats : int Com.CatVar.Map.t;
   verif_var_stats : int StrMap.t;
   verif_seq : int;
-} [@@deriving yojson]
-
-type target = (int Pos.marked, Mast.error_name) Com.target
+}
 [@@deriving yojson]
+
+type target = (int Pos.marked, Mast.error_name) Com.target [@@deriving yojson]
 
 type call_compute =
   | CallDomain of string * Com.DomainId.t * string option
@@ -501,7 +501,8 @@ type program = {
   prog_targets : target StrMap.t;
   prog_main_target : string;
   prog_call_map : (Pos.t CallMap.t * Pos.t) CallMap.t;
-} [@@deriving yojson]
+}
+[@@deriving yojson]
 
 let is_vartmp (var : string) =
   String.length var >= 6 && String.sub var 0 6 = "VARTMP"
@@ -3289,7 +3290,6 @@ let proceed (main_target : string) (p : Mast.program) : program =
       if ef.is_var && StrMap.cardinal prog.prog_vars = 0 then
         Err.event_field_need_a_variable name (Pos.get ef.name))
     prog.prog_event_fields;
-  Platform.Log.log (program_to_yojson prog |> Yojson.Safe.pretty_to_string);
   if StrMap.is_empty prog.prog_targets then Err.has_no_target ();
   (match StrMap.find_opt prog.prog_main_target prog.prog_targets with
   | None -> Err.main_target_not_found prog.prog_main_target
