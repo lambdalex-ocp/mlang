@@ -128,7 +128,7 @@ let run_multiple_tests m_program tests =
     | false -> fun _ -> true
     | true -> ( fun x -> match x.[0] with 'A' .. 'Z' -> true | _ -> false)
   in
-  Test_interpreter.check_all_tests m_program tests !Config.value_sort
+  Multi_test_interpreter.check_all_tests m_program tests !Config.value_sort
     !Config.round_ops filter_function
 
 let extract m_program =
@@ -157,7 +157,7 @@ let driver () =
     let m_program = Mir.expand_functions m_program in
     Cli.debug_print "Creating combined program suitable for execution...";
     match !Config.execution_mode with
-    | SingleTest test -> run_single_test m_program test
+    | SingleTest test -> run_single_test m_program (Filename test)
     | MultipleTests tests -> run_multiple_tests m_program tests
     | Extraction -> extract m_program
   with Errors.StructuredError (msg, pos_list, kont) as e ->

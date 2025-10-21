@@ -15,20 +15,10 @@
 
 val check_test :
   Mir.program ->
-  (* test file name *) string ->
+  (* test file *) Irj_file.input ->
   (* dbg_graph_file *) string option ->
   Config.value_sort ->
   Config.round_ops ->
   unit
 
-val check_all_tests :
-  Mir.program ->
-  string ->
-  Config.value_sort ->
-  Config.round_ops ->
-  (string -> bool) ->
-  unit
-(** Similar to [check_test] but tests a whole folder full of test files *)
-
-val check_one_test :
-  Mir.program -> string -> Config.value_sort -> Config.round_ops -> unit
+exception InterpError of int
