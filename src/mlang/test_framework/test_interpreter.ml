@@ -135,8 +135,8 @@ let to_MIR_function_and_inputs (program : Mir.program) (t : Irj_ast.irj_file) :
 
 exception InterpError of int
 
-let check_test ?(files : string list option) (program : Mir.program)
     (test_name : string) (dep_graph_file : string option)
+let check_test (program : Mir.program)
     (value_sort : Config.value_sort) (round_ops : Config.round_ops) : unit =
   let check_vars exp vars =
     let test_error_margin = 0.01 in
