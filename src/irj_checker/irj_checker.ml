@@ -20,7 +20,6 @@
     Usage: irj_checker.exe [--message-format=VAL] <test_file.irj> [transformation-target]*)
 
 open Cmdliner
-open Mlang
 
 type message_format_enum = Human | GNU
 
