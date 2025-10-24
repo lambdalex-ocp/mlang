@@ -19,6 +19,6 @@ val check_test :
   (* dbg_graph_file *) string option ->
   Config.value_sort ->
   Config.round_ops ->
-  unit
+  Dbg_info.t list option
 
 exception InterpError of int

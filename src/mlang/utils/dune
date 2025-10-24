@@ -6,11 +6,6 @@
  (flags
   (:standard -open Utils_common -open Platform))
  (modules
-  strSet
-  setExt
-  pp
-  mapExt
-  strMap
   setSetExt
   intSet
   errors
@@ -19,7 +14,6 @@
   charMap
   strings
   topologicalSorting
-  json
   utils)
  (preprocess
   (staged_pps ppx_deriving.show ppx_deriving_yojson))
@@ -30,7 +24,7 @@
  (package mlang)
  (preprocess
   (staged_pps ppx_import ppx_deriving.show ppx_deriving_yojson))
- (modules pos dgfip_m config))
+ (modules pos dgfip_m config json mapExt strMap pp strSet setExt))
 
 (library
  (name platform)

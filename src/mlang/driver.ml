@@ -160,9 +160,9 @@ let driver () =
     | SingleTest test -> run_single_test m_program (Filename test)
     | MultipleTests tests -> run_multiple_tests m_program tests
     | Extraction -> extract m_program
-  with Errors.StructuredError (msg, pos_list, kont) as _e ->
+  with Errors.StructuredError (msg, pos_list, kont) as _e -> (
     Cli.error_print "%a" Errors.format_structured_error (msg, pos_list);
-    (match kont with None -> () | Some kont -> kont ())
+    match kont with None -> () | Some kont -> kont ())
 
 let main () =
   let opt_code =

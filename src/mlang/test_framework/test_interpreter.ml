@@ -137,7 +137,7 @@ exception InterpError of int
 
 let check_test (program : Mir.program) (test_input : Irj_file.input)
     (dep_graph_file : string option) (value_sort : Config.value_sort)
-    (round_ops : Config.round_ops) : unit =
+    (round_ops : Config.round_ops) : Dbg_info.t list option =
   let check_vars exp vars =
     let test_error_margin = 0.01 in
     let fold vname f nb =
@@ -182,7 +182,7 @@ let check_test (program : Mir.program) (test_input : Irj_file.input)
   Cli.debug_print "Running test %s..." t.nom;
   let insts = to_MIR_function_and_inputs program t in
   let rec check = function
-    | [] -> ()
+    | [] -> []
     | inst :: insts ->
         let dbg_flag = Option.is_some dep_graph_file in
         Cli.debug_print "Executing program %s" inst.label;
@@ -192,8 +192,8 @@ let check_test (program : Mir.program) (test_input : Irj_file.input)
           Mir_interpreter.evaluate_program program inst.vars inst.events
             value_sort round_ops dbg_flag
         in
-        (match (dep_graph_file, dbg_info) with
-        | None, None -> ()
+        let dbg_info = (match (dep_graph_file, dbg_info) with
+        | None, None -> None
         | Some filename, Some dbg_info ->
             (* Add the input variables value - But only if they have not been set
                (not set == origin = Declared) *)
@@ -215,20 +215,24 @@ let check_test (program : Mir.program) (test_input : Irj_file.input)
             in
             let info = Com.Var.Map.fold add_to_map inst.vars dbg_info.info in
             let dbg_info = { dbg_info with info } in
-            Dbg_info.write_json_file filename dbg_info
-        | _ -> assert false);
-
+            (match !Config.platform with
+            | Binary -> Dbg_info.write_json_file filename dbg_info
+            | Web _ -> ());
+            Some dbg_info
+        | _ -> assert false) in
         let nbErrs =
           check_vars inst.expectedVars varMap
           + check_anos inst.expectedAnos anoSet
         in
         if nbErrs <= 0 then (
           Cli.debug_print "OK!";
-          check insts)
+          dbg_info :: check insts)
         else (
           Cli.debug_print "KO!";
           raise (InterpError nbErrs))
   in
-  check insts;
+  let infos = check insts in
+  let clean_infos = List.filter_map (fun i -> i) infos in
   Config.warning_flag := dbg_warning;
-  Config.display_time := dbg_time
+  Config.display_time := dbg_time;
+  Some clean_infos

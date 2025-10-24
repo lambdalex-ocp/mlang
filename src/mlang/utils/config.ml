@@ -82,6 +82,10 @@ type execution_mode =
   | MultipleTests of string
   | Extraction
 
+type platform =
+  | Binary
+  | Web of string StrMap.t (* filemap *)
+
 type files = NonEmpty of string list
 
 (* Flags inherited from the old compiler *)
@@ -138,6 +142,8 @@ let comparison_error_margin = ref 0.000001
 let income_year = ref 0
 
 let dbgraph_var_focus = ref None
+
+let platform = ref Binary
 
 let set_all_arg_refs (files_ : files) applications_ (without_dgfip_m_ : bool)
     (debug_ : bool) (var_info_debug_ : string list) (display_time_ : bool)

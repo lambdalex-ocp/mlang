@@ -232,22 +232,25 @@ struct
     let ctx_ics =
       match dbg_flag with
       | false -> StrMap.empty
-      | true ->
-          let targets = StrMap.bindings p.program_targets |> List.map snd in
-          let filepaths =
-            List.filter_map (fun t -> t.Com.target_filepath) targets
-          in
-          let filepath_set = StrSet.of_list filepaths in
-          StrSet.fold
-            (fun path map ->
-              Log.log "before i plante";
-              let ic = open_in path in
-              Log.log "after i plante";
-              let contents = In_channel.input_all ic in
-              let map = StrMap.add path contents map in
-              In_channel.close ic;
-              map)
-            filepath_set StrMap.empty
+      | true -> (
+          match !Config.platform with
+          | Web filemap -> filemap
+          | Binary ->
+              let targets = StrMap.bindings p.program_targets |> List.map snd in
+              let filepaths =
+                List.filter_map (fun t -> t.Com.target_filepath) targets
+              in
+              let filepath_set = StrSet.of_list filepaths in
+              StrSet.fold
+                (fun path map ->
+                  Log.log "before i plante";
+                  let ic = open_in path in
+                  Log.log "after i plante";
+                  let contents = In_channel.input_all ic in
+                  let map = StrMap.add path contents map in
+                  In_channel.close ic;
+                  map)
+                filepath_set StrMap.empty)
     in
     {
       ctx_prog = p;
