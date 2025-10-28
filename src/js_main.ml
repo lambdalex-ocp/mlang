@@ -1,6 +1,7 @@
 open M_ir
 open Utils
 open Js_of_ocaml
+open Mlang
 module Interp = M_ir.Mir_interpreter
 
 let hello () = Platform.Log.log "hello c:"
@@ -50,20 +51,20 @@ let parse_file fileMap irj_contents =
     Mlang.Test_interpreter.check_test m_program (Contents irj_contents)
       (Some "") !Config.value_sort !Config.round_ops
   in
-  match dbg_infos with
-  | None -> Js.string "Ok :ok_hand:"
-  | Some dbg_infos ->
-      let buf = Buffer.create 1000 in
-      let delim = ref "" in
-      Buffer.add_char buf '[';
-      dbg_infos |> List.iter (
-        fun info ->
-          Buffer.add_string buf !delim;
-          delim := ",";
-          Dbg_info.to_json (Format.formatter_of_buffer buf) info;
-          );
-      Buffer.add_char buf ']';
-      Buffer.to_bytes buf |> Bytes.to_string |> Js.string
+  let buf = Buffer.create 1000 in
+  let fmt = Format.formatter_of_buffer buf in
+  let delim = ref "" in
+  Buffer.add_char buf '[';
+  dbg_infos
+  |> List.iter (fun Test_interpreter.{target; dbg_info} ->
+         Buffer.add_string buf !delim;
+         delim := ",";
+         Format.fprintf fmt {|{"target": "%s", "dbg_info": |} target;
+         Dbg_info.to_json fmt dbg_info;
+         Buffer.add_string buf "}"
+      );
+  Buffer.add_char buf ']';
+  Buffer.to_bytes buf |> Bytes.to_string |> Js.string
 
 let obj =
   object%js

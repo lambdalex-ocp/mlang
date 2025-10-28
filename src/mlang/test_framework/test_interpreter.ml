@@ -135,9 +135,11 @@ let to_MIR_function_and_inputs (program : Mir.program) (t : Irj_ast.irj_file) :
 
 exception InterpError of int
 
+type target_dbg_info = { target : string; dbg_info : Dbg_info.t }
+
 let check_test (program : Mir.program) (test_input : Irj_file.input)
     (dep_graph_file : string option) (value_sort : Config.value_sort)
-    (round_ops : Config.round_ops) : Dbg_info.t list option =
+    (round_ops : Config.round_ops) : target_dbg_info list =
   let check_vars exp vars =
     let test_error_margin = 0.01 in
     let fold vname f nb =
@@ -192,41 +194,45 @@ let check_test (program : Mir.program) (test_input : Irj_file.input)
           Mir_interpreter.evaluate_program program inst.vars inst.events
             value_sort round_ops dbg_flag
         in
-        let dbg_info = (match (dep_graph_file, dbg_info) with
-        | None, None -> None
-        | Some filename, Some dbg_info ->
-            (* Add the input variables value - But only if they have not been set
-               (not set == origin = Declared) *)
-            let add_to_map var lit map =
-              let name = Com.Var.name_str var in
-              StrMap.update name
-                (function
-                  | Some
-                      Dbg_info.Info.{ origin = { code_orig = Declared; _ }; _ }
-                  | None ->
-                      let def = Some "input-set" in
-                      let rule_id = Dbg_info.Origin.Input in
-                      let file = "test_interpreter.ml" in
-                      let origin = Dbg_info.Origin.make file 0 rule_id in
-                      let info = Dbg_info.Info.make var def lit origin in
-                      Some info
-                  | oth -> oth)
-                map
-            in
-            let info = Com.Var.Map.fold add_to_map inst.vars dbg_info.info in
-            let dbg_info = { dbg_info with info } in
-            (match !Config.platform with
-            | Binary -> Dbg_info.write_json_file filename dbg_info
-            | Web _ -> ());
-            Some dbg_info
-        | _ -> assert false) in
+        let target_dbg_info =
+          match (dep_graph_file, dbg_info) with
+          | None, None -> None
+          | Some filename, Some dbg_info ->
+              (* Add the input variables value - But only if they have not been set
+                 (not set == origin = Declared) *)
+              let add_to_map var lit map =
+                let name = Com.Var.name_str var in
+                StrMap.update name
+                  (function
+                    | Some
+                        Dbg_info.Info.
+                          { origin = { code_orig = Declared; _ }; _ }
+                    | None ->
+                        let def = Some "input-set" in
+                        let rule_id = Dbg_info.Origin.Input in
+                        let file = "test_interpreter.ml" in
+                        let origin = Dbg_info.Origin.make file 0 rule_id in
+                        let info = Dbg_info.Info.make var def lit origin in
+                        Some info
+                    | oth -> oth)
+                  map
+              in
+              let info = Com.Var.Map.fold add_to_map inst.vars dbg_info.info in
+              let dbg_info = { dbg_info with info } in
+              (match !Config.platform with
+              | Binary -> Dbg_info.write_json_file filename dbg_info
+              | Web _ -> ());
+              let target_dbg_info = {dbg_info; target = inst.label } in
+              Some target_dbg_info
+          | _ -> assert false
+        in
         let nbErrs =
           check_vars inst.expectedVars varMap
           + check_anos inst.expectedAnos anoSet
         in
         if nbErrs <= 0 then (
           Cli.debug_print "OK!";
-          dbg_info :: check insts)
+          target_dbg_info :: check insts)
         else (
           Cli.debug_print "KO!";
           raise (InterpError nbErrs))
@@ -235,4 +241,4 @@ let check_test (program : Mir.program) (test_input : Irj_file.input)
   let clean_infos = List.filter_map (fun i -> i) infos in
   Config.warning_flag := dbg_warning;
   Config.display_time := dbg_time;
-  Some clean_infos
+  clean_infos

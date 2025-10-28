@@ -13,12 +13,14 @@
    You should have received a copy of the GNU General Public License along with
    this program. If not, see <https://www.gnu.org/licenses/>. *)
 
+type target_dbg_info = { target : string; dbg_info : Dbg_info.t }
+
 val check_test :
   Mir.program ->
   (* test file *) Irj_file.input ->
   (* dbg_graph_file *) string option ->
   Config.value_sort ->
   Config.round_ops ->
-  Dbg_info.t list option
+  target_dbg_info list
 
 exception InterpError of int
