@@ -99,7 +99,7 @@ let to_json (fmt : Format.formatter) info : unit =
           let given_back = Com.Var.is_given_back var in
           let descr =
             Pos.unmark @@ Com.Var.descr var
-            |> Re.Str.global_replace (Re.Str.regexp "\t") "  "
+            |> String.map (fun c -> if c == '\t' then ' ' else c)
           in
           let str =
             Format.asprintf
