@@ -348,7 +348,4 @@ let expand_functions (p : program) : program =
   (* let out = open_out "program_dump.txt" in *)
   (* let fmt = Format.formatter_of_out_channel out in *)
   (* Format.fprintf fmt "%a@." pp_program return; *)
-  let out = open_out "program_dump.json" in
-  let json = program_to_yojson return in
-  Yojson.Safe.pretty_to_channel out json;
   return
