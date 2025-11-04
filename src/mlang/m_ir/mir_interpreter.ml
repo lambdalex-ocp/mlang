@@ -243,9 +243,7 @@ struct
               let filepath_set = StrSet.of_list filepaths in
               StrSet.fold
                 (fun path map ->
-                  Log.log "before i plante";
                   let ic = open_in path in
-                  Log.log "after i plante";
                   let contents = In_channel.input_all ic in
                   let map = StrMap.add path contents map in
                   In_channel.close ic;
