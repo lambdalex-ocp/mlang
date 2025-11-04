@@ -96,6 +96,10 @@ let result_print (_ : ('a, Format.formatter, unit, unit) format4) : 'a =
 let create_progress_bar (_ : string) : (string -> unit) * (string -> unit) =
   assert false
 
-let retrieve_loc_text (_ : Pos.t) : string =
+let retrieve_loc_text (pos : Pos.t) : string =
   Console.console##log "retrieve loc text!";
-  assert false
+  match !Config.platform with
+  | Binary -> assert false
+  | Web _fs ->
+      let _filename = Pos.get_file pos in
+      Pos.show pos
