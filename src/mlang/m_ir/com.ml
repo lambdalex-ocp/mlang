@@ -144,8 +144,12 @@ type loc =
 
 module Array = struct
   include Array
+  open Yojson.Safe
 
-  let to_yojson _ = assert false
+  let to_yojson f arr =
+    print_endline "kewl";
+    let l = Array.to_list @@ Array.map f arr in
+    `List l
 
   let of_yojson _ = assert false
 end
@@ -559,7 +563,9 @@ and 'v m_expression = 'v expression Pos.marked [@@deriving show, yojson]
 type const = { id : string; value : literal; pos : Pos.t }
 [@@deriving show, yojson]
 
-type 'v dep = V of 'v | Const of const [@@deriving show, yojson]
+type 'v dep = Tab of 'v * 'v m_expression | V of 'v 
+| LiteralDep of literal
+| Const of const [@@deriving show, yojson]
 
 (* This code was taken from Noe and adapted to the 2025 var architecture *)
 let get_used_variables (e : 'v expression) :
@@ -575,11 +581,6 @@ let get_used_variables (e : 'v expression) :
         let acc = get_used_variables_ e1 acc in
         let acc = get_used_variables_ e2 acc in
         acc
-    (* FIXME: Index has disappeared, ask David what happened to it *)
-    (* | Index (Mark (var, _), Mark (e, _)) -> *)
-    (*     let acc = (var, Some e) :: acc in *)
-    (*     let acc = get_used_variables_ e acc in *)
-    (*     acc *)
     | Conditional (Mark (e1, _), Mark (e2, _), e3) -> (
         let acc = get_used_variables_ e1 acc in
         let acc = get_used_variables_ e2 acc in
@@ -596,11 +597,15 @@ let get_used_variables (e : 'v expression) :
     | Attribut (Mark (var, _), _)
     | IsVariable (Mark (var, _), _) -> (
         match var with
-        | VarAccess (_, v) | TabAccess (_, v, _) -> (V v, None) :: acc
+        | TabAccess (_, v, m_i) -> 
+            (Tab (v, m_i), None) :: acc
+        | VarAccess (_, v) -> (V v, None) :: acc
         | FieldAccess (_, Mark (v, _), _, _) -> get_used_variables_ v acc)
     | Literal { lit; origin = Some (Mark (id, pos)) } ->
         (Const { id; value = lit; pos }, None) :: acc
-    | Literal _ | NbCategory _ | NbAnomalies | NbDiscordances | NbInformatives
+    | Literal { lit; origin = None } -> 
+        (LiteralDep lit, None) :: acc
+    | NbCategory _ | NbAnomalies | NbDiscordances | NbInformatives
     | NbBloquantes ->
         acc
   in

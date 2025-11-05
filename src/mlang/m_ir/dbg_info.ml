@@ -31,12 +31,26 @@ module Info = struct
   let make var def vval origin = { var; def; vval; origin }
 end
 
-module Graph = Graph.Persistent.Digraph.Concrete (struct
-  include String
+module Vertex = struct
+  type kind = Literal | Var
+
+  type t = { kind : kind; name : String.t }
 
   (* This feels weird, but String.hash was introduced in 5.0 *)
-  let hash = Hashtbl.hash
-end)
+  let hash t = Hashtbl.hash t.name
+
+  let compare a b = String.compare a.name b.name
+
+  let equal a b = String.equal a.name b.name
+
+  let name t = t.name
+
+  let lit name = { kind = Literal; name }
+
+  let var name = { kind = Var; name }
+end
+
+module Graph = Graph.Persistent.Digraph.Concrete (Vertex)
 
 module Const = struct
   type t = { value : Com.literal; origin : Origin.t }
@@ -54,22 +68,28 @@ let to_json (fmt : Format.formatter) info : unit =
   let open Format in
   let open Info in
   let open Const in
+  let open Vertex in
   let delim = ref "" in
   Format.fprintf fmt "{\"graph\":[";
   let pp_vertex v =
-    let var_name = Graph.V.label v in
-    let obj = Format.asprintf {|{"name": "%s"}|} var_name in
-    Format.fprintf fmt {|%s@.{"data": %s}|} !delim obj;
-    (* Small hack to avoid trailing commas *)
-    delim := ","
+    let var = Graph.V.label v in
+    (match var.kind with
+    | Literal -> 
+        let obj = Format.asprintf {|{"kind": "lit", "value": %S}|} var.name in
+        Format.fprintf fmt {|%s@.{"data": %s}|} !delim obj
+    | Var ->
+        let obj = Format.asprintf {|{"name": "%s"}|} var.name in
+        Format.fprintf fmt {|%s@.{"data": %s}|} !delim obj);
+        (* Small hack to avoid trailing commas *)
+        delim := ","
   in
   Format.printf "writing vertices...@.";
   Graph.iter_vertex pp_vertex info.graph;
   let print_edge (e : Graph.E.t) =
     let src = Graph.E.src e in
     let dst = Graph.E.dst e in
-    let src = Graph.V.label src in
-    let dst = Graph.V.label dst in
+    let src = Graph.V.label src |> Vertex.name in
+    let dst = Graph.V.label dst |> Vertex.name in
     Format.fprintf fmt {|,@.{"data": {"source": "%s", "target": "%s"}}|} src dst
   in
   Format.printf "writing edges...@.";

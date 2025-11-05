@@ -564,7 +564,21 @@ struct
         | None -> ()
         | Some dbg_info ->
             let open Dbg_info in
-            let name = Com.Var.name_str v in
+            let eval_m_index ctx m_i =
+              match evaluate_expr ctx m_i with
+              | Number z ->
+                  Int64.to_string @@ N.to_int z
+              | Undefined -> "indefini" in
+            let access_name name =
+              match access with
+              | Com.VarAccess _ -> name
+              | Com.TabAccess (_, v, m_i) -> (
+                let name = Com.Var.name_str v in
+                let idx_str = eval_m_index ctx m_i in
+                Format.asprintf "%s[%s]" name idx_str)
+              | Com.FieldAccess (_, _, _, _) -> Com.Var.name_str v
+            in
+            let name = access_name @@ Com.Var.name_str v in
             let lit = value_to_literal value in
             let pos = Pos.get vexpr in
             let filename = Pos.get_file pos in
@@ -588,25 +602,37 @@ struct
             in
             let info = Dbg_info.Info.make v def lit origin in
             let info = StrMap.add name info dbg_info.info in
-            let vert = Dbg_info.Graph.V.create name in
+            let vert = Dbg_info.Graph.V.create @@ Dbg_info.Vertex.var name in
             let graph = dbg_info.graph in
             let deps = Com.get_used_variables @@ Pos.unmark vexpr in
-            let vars, consts =
+            let vars, consts, lits =
               List.fold_left
-                (fun (vars, consts) dep ->
+                (fun (vars, consts, lits) dep ->
                   match fst dep with
-                  | Com.V var -> (var :: vars, consts)
-                  | Const c -> (vars, c :: consts))
-                ([], []) deps
+                  | Com.V var -> 
+                      let name = Com.Var.name_str var in
+                      (Vertex.var name :: vars, consts, lits)
+                  | Const c -> (vars, c :: consts, lits)
+                  | Tab (var, m_i) ->
+                      let name = Com.Var.name_str var in
+                      let idx_str = eval_m_index ctx m_i in
+                      let name = Format.asprintf "%s[%s]" name idx_str in
+                      (Vertex.var name::vars, consts, lits)
+                  | LiteralDep lit ->
+                      let str = match lit with
+                      | Undefined -> "indefini"
+                      | Float f -> string_of_float f in
+                      (vars, consts, Vertex.lit ("$" ^ str)::lits)
+                )
+                ([], [], []) deps
             in
-            let var_names = List.map Com.Var.name_str vars in
-            let const_names = List.map (fun c -> c.Com.id) consts in
+            let const_names = List.map (fun c -> Vertex.var c.Com.id) consts in
             let add_edge graph depname =
               let dep_vert = Dbg_info.Graph.V.create depname in
               Dbg_info.Graph.add_edge graph vert dep_vert
             in
             let graph =
-              List.fold_left add_edge graph (var_names @ const_names)
+              List.fold_left add_edge graph (vars @ const_names @ lits)
             in
             let add_to_consts map const =
               let id = const.Com.id in
