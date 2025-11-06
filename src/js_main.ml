@@ -65,9 +65,9 @@ let parse_filemap file_map callbacks =
   Config.platform := Config.Web filemap;
   m_program
 
-let run m_program irj_contents =
-  Config.mpp_function := "enchainement_primitif_interpreteur";
-  Config.application_names := [ "iliad" ];
+let run m_program irj_contents target application =
+  Config.mpp_function := Js.to_string target;
+  Config.application_names := [ Js.to_string application ];
   (* Config.mpp_function := "target"; *)
   (* Config.application_names := [ "app" ]; *)
   print_endline "before expand";
