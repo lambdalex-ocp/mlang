@@ -1161,11 +1161,13 @@ let check_name_in_env env m_name =
       Err.variable_already_declared name old_pos pos
   | None -> ()
 
-let rec fold_var_expr (get_var : 'v -> string Pos.marked)
+let fold_var_expr (get_var : 'v -> string Pos.marked)
     (fold_sp : Com.var_space -> var_env -> 'a -> 'a)
     (fold_var : Com.var_space -> 'v -> var_mem_type -> var_env -> 'a -> 'a)
-    (acc : 'a) (m_expr : 'v Com.m_expression) (env : var_env) : 'a =
-  let fold_aux = fold_var_expr get_var fold_sp fold_var in
+    acc m_expr env
+    : 'a =
+  print_endline "fold_var_expr";
+  let rec fold_aux (acc: 'a) (m_expr: 'v Com.m_expression) env : 'a =
   let expr, expr_pos = Pos.to_couple m_expr in
   match expr with
   | TestInSet (_positive, e, values) ->
