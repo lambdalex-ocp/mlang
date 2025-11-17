@@ -154,6 +154,14 @@ let dbgraph_var_focus =
           {|To be used in conjunction with the --debug option. This 
         makes the graph output only information concerning the variable passed.|})
 
+let plain_output =
+  Arg.(
+    value
+    & flag
+    & info
+      [ "plain_output" ]
+      ~doc:"Do not print terminal characters.")
+
 let comparison_error_margin_cli =
   Arg.(
     value
@@ -200,7 +208,8 @@ let mlang_t f =
     $ display_time $ dbg_graph_file $ no_print_cycles $ backend $ output
     $ run_all_tests $ dgfip_test_filter $ run_test $ mpp_function
     $ optimize_unsafe_float $ precision $ roundops $ comparison_error_margin_cli
-    $ income_year_cli $ m_clean_calls $ dgfip_options $ dbgraph_var_focus)
+    $ income_year_cli $ m_clean_calls $ dgfip_options $ dbgraph_var_focus
+    $ plain_output)
 
 let info =
   let doc =
@@ -290,8 +299,8 @@ let time_marker () =
 
 let format_with_style (styles : ANSITerminal.style list)
     (str : ('a, unit, string) format) =
-  if true (* can depend on a stylr flag *) then ANSITerminal.sprintf styles str
-  else Printf.sprintf str
+  if !Config.plain_output (* can depend on a stylr flag *) then Printf.sprintf str
+  else ANSITerminal.sprintf styles str
 
 (** Prints [\[DEBUG\]] in purple on the terminal standard output as well as
     timing since last debug *)
@@ -470,12 +479,24 @@ let retrieve_loc_text (pos : Pos.t) : string =
   let filename = Pos.get_file pos in
   if filename = "" then "No position information"
   else
-    let get_lines =
-      match File.open_file_for_text_extraction pos with
-      | exception Sys_error _ ->
-          error_print "File not found for displaying position : \"%s\"" filename;
-          failwith "Pos error"
-      | get_lines -> get_lines
+    let lines =
+      match !Config.platform with
+      | Server filemap -> begin
+          match StrMap.find_opt filename filemap with
+          | None -> failwith "Pos error"
+          | Some contents -> 
+              let lines = String.split_on_char ('\n') contents in
+              [List.nth lines (Pos.get_start_line pos)]
+        end
+      | Binary ->
+          let get_lines =
+            match File.open_file_for_text_extraction pos with
+            | exception Sys_error _ ->
+                error_print "File not found for displaying position : \"%s\""
+                  filename;
+                failwith "Pos error"
+            | get_lines -> get_lines
+          in
+          get_lines 1
     in
-    let lines = get_lines 1 in
     format_lines pos lines

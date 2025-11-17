@@ -82,9 +82,7 @@ type execution_mode =
   | MultipleTests of string
   | Extraction
 
-type platform =
-  | Binary
-  | Web of string StrMap.t (* filemap *)
+type platform = Binary | Server of string StrMap.t (* filemap *)
 
 type files = NonEmpty of string list
 
@@ -145,6 +143,8 @@ let dbgraph_var_focus = ref None
 
 let platform = ref Binary
 
+let plain_output =  ref true
+
 let set_all_arg_refs (files_ : files) applications_ (without_dgfip_m_ : bool)
     (debug_ : bool) (var_info_debug_ : string list) (display_time_ : bool)
     (dbg_graph_file_ : string) (no_print_cycles_ : bool)
@@ -153,7 +153,7 @@ let set_all_arg_refs (files_ : files) applications_ (without_dgfip_m_ : bool)
     (income_year_ : int) (value_sort_ : value_sort) (round_ops_ : round_ops)
     (backend_ : backend) (dgfip_test_filter_ : bool) (mpp_function_ : string)
     (dgfip_flags_ : Dgfip_options.flags) (execution_mode_ : execution_mode)
-    (dbgraph_var_focus_ : string option) =
+    (dbgraph_var_focus_ : string option) (plain_output_ : bool) =
   source_files := files_;
   application_names := applications_;
   without_dgfip_m := without_dgfip_m_;
@@ -174,6 +174,7 @@ let set_all_arg_refs (files_ : files) applications_ (without_dgfip_m_ : bool)
   mpp_function := mpp_function_;
   dgfip_flags := dgfip_flags_;
   dbgraph_var_focus := dbgraph_var_focus_;
+  plain_output := plain_output_;
   match output_file_ with
   | None -> ()
   | Some o -> (

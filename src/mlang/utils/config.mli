@@ -58,9 +58,7 @@ type execution_mode =
   | MultipleTests of string
   | Extraction
 
-type platform =
-  | Binary
-  | Web of string StrMap.t (* filemap *)
+type platform = Binary | Server of string StrMap.t (* filemap *)
 
 type files = NonEmpty of string list
 
@@ -129,6 +127,8 @@ val dbgraph_var_focus : string option ref
 
 val platform : platform ref
 
+val plain_output : bool ref
+
 val set_all_arg_refs :
   (* files *) files ->
   (* applications *) string list ->
@@ -151,4 +151,5 @@ val set_all_arg_refs :
   (* dgfip_flags *) Dgfip_options.flags ->
   (* execution_mode *) execution_mode ->
   (* dbgraph_var_focus *) string option ->
+  (* plain_output *) bool ->
   unit
