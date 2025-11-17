@@ -486,7 +486,7 @@ let retrieve_loc_text (pos : Pos.t) : string =
           | None -> failwith "Pos error"
           | Some contents -> 
               let lines = String.split_on_char ('\n') contents in
-              [List.nth lines (Pos.get_start_line pos)]
+              [List.nth lines (Pos.get_start_line pos - 1)]
         end
       | Binary ->
           let get_lines =
