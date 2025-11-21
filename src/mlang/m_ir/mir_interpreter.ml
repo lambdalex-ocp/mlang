@@ -226,15 +226,15 @@ struct
             in
             StrMap.add str t map
           in
-          let info = StrMap.fold add_to_map p.program_vars dbg_info.info in
-          Some { dbg_info with info }
+          let infos = StrMap.fold add_to_map p.program_vars dbg_info.infos in
+          Some { dbg_info with infos }
     in
     let ctx_ics =
       match dbg_flag with
       | false -> StrMap.empty
       | true -> (
           match !Config.platform with
-          | Web filemap -> filemap
+          | Server filemap -> filemap
           | Binary ->
               let targets = StrMap.bindings p.program_targets |> List.map snd in
               let filepaths =
@@ -560,32 +560,37 @@ struct
     | Some (vsd, v) -> (
         let value = evaluate_expr ctx vexpr in
         set_var_value ctx vsd v value;
-        match ctx.ctx_dbg_info with
-        | None -> ()
-        | Some dbg_info ->
+        match ctx.ctx_dbg_info, ctx.ctx_exec_ctx with
+        | None, _ -> ()
+        | _, CtxTarget "effacer_base_etc"
+        | _, CtxTarget "effacer_avfisc_1"
+        | _, CtxTarget "effacer_calculee_etc" ->
+            ()
+        | Some dbg_info, _->
             let open Dbg_info in
             let eval_m_index ctx m_i =
               match evaluate_expr ctx m_i with
-              | Number z ->
-                  Int64.to_string @@ N.to_int z
-              | Undefined -> "indefini" in
+              | Number z -> Int64.to_string @@ N.to_int z
+              | Undefined -> "indefini"
+            in
             let access_name name =
               match access with
               | Com.VarAccess _ -> name
-              | Com.TabAccess (_, v, m_i) -> (
-                let name = Com.Var.name_str v in
-                let idx_str = eval_m_index ctx m_i in
-                Format.asprintf "%s[%s]" name idx_str)
+              | Com.TabAccess (_, v, m_i) ->
+                  let name = Com.Var.name_str v in
+                  let idx_str = eval_m_index ctx m_i in
+                  Format.asprintf "%s[%s]" name idx_str
               | Com.FieldAccess (_, _, _, _) -> Com.Var.name_str v
             in
             let name = access_name @@ Com.Var.name_str v in
+            (* Format.printf "setting %s@." name; *)
             let lit = value_to_literal value in
             let pos = Pos.get vexpr in
             let filename = Pos.get_file pos in
             (* we should do that only if we've not done it yet. *)
             let def =
               let ic_opt = StrMap.find_opt filename ctx.ctx_ics in
-              match StrMap.find_opt name dbg_info.info with
+              match StrMap.find_opt name dbg_info.infos with
               | None | Some { def = None; _ } ->
                   File.extract_text_exact_loc pos ic_opt
               | Some { def = Some _ as def; _ } -> def
@@ -601,7 +606,20 @@ struct
               Dbg_info.Origin.make file (Pos.get_start_line pos) rule_id
             in
             let info = Dbg_info.Info.make v def lit origin in
-            let info = StrMap.add name info dbg_info.info in
+            let infos = StrMap.add name info dbg_info.infos in
+            let _ = match StrMap.find_opt name dbg_info.infos with
+            | Some { origin = { code_orig = Declared; _ } ; _ } -> ()
+            | Some _old_info -> 
+                if name = "VARTMP1" || name = "VARTMP2" then
+                  ()
+                else (())
+                (* Format.printf "rewriting %s@." name; *)
+                (* Format.printf "last value: %a | from: %s@.now: %a | from: %s@."  *)
+                (*   Com.format_literal old_info.vval *)
+                (*   (Origin.to_json old_info.origin) *)
+                (*   Com.format_literal info.vval *)
+                (*   @@ Origin.to_json info.origin) *)
+            | None -> () in
             let vert = Dbg_info.Graph.V.create @@ Dbg_info.Vertex.var name in
             let graph = dbg_info.graph in
             let deps = Com.get_used_variables @@ Pos.unmark vexpr in
@@ -609,7 +627,7 @@ struct
               List.fold_left
                 (fun (vars, consts, lits) dep ->
                   match fst dep with
-                  | Com.V var -> 
+                  | Com.V var ->
                       let name = Com.Var.name_str var in
                       (Vertex.var name :: vars, consts, lits)
                   | Const c -> (vars, c :: consts, lits)
@@ -617,15 +635,13 @@ struct
                       let name = Com.Var.name_str var in
                       let idx_str = eval_m_index ctx m_i in
                       let name = Format.asprintf "%s[%s]" name idx_str in
-                      (Vertex.var name::vars, consts, lits)
+                      (Vertex.var name :: vars, consts, lits)
                   | LiteralDep lit ->
-                      let str = match lit with
-                      | Undefined -> "indefini"
-                      | Float f -> string_of_float f in
-                      (vars, consts, Vertex.lit ("$" ^ str)::lits)
-                )
+                      let str = Format.asprintf "%a" Com.format_literal lit in
+                      (vars, consts, Vertex.lit ("$" ^ str) :: lits))
                 ([], [], []) deps
             in
+
             let const_names = List.map (fun c -> Vertex.var c.Com.id) consts in
             let add_edge graph depname =
               let dep_vert = Dbg_info.Graph.V.create depname in
@@ -642,7 +658,7 @@ struct
               StrMap.add id const map
             in
             let consts = List.fold_left add_to_consts dbg_info.consts consts in
-            ctx.ctx_dbg_info <- Some { graph; info; consts })
+            ctx.ctx_dbg_info <- Some { graph; infos; consts })
 
   and evaluate_expr (ctx : ctx) (e : Mir.expression Pos.marked) : value =
     let comparison op new_e1 new_e2 =
@@ -1291,6 +1307,7 @@ struct
        If it is, we assume we're in a rule, and register it
        to annotate the value we'll set later in the dbg_info. *)
     let target_name = Pos.unmark target.target_name in
+    Format.printf "evaluating target: %s@." target_name;
     let rule_id =
       IntMap.fold
         (fun i str acc ->

@@ -60,9 +60,9 @@ module Const = struct
     { value; origin }
 end
 
-type t = { graph : Graph.t; info : Info.t StrMap.t; consts : Const.t StrMap.t }
+type t = { graph : Graph.t; infos : Info.t StrMap.t; consts : Const.t StrMap.t }
 
-let empty = { graph = Graph.empty; info = StrMap.empty; consts = StrMap.empty }
+let empty = { graph = Graph.empty; infos = StrMap.empty; consts = StrMap.empty }
 
 let to_json (fmt : Format.formatter) info : unit =
   let open Format in
@@ -74,14 +74,14 @@ let to_json (fmt : Format.formatter) info : unit =
   let pp_vertex v =
     let var = Graph.V.label v in
     (match var.kind with
-    | Literal -> 
+    | Literal ->
         let obj = Format.asprintf {|{"kind": "lit", "value": %S}|} var.name in
         Format.fprintf fmt {|%s@.{"data": %s}|} !delim obj
     | Var ->
         let obj = Format.asprintf {|{"name": "%s"}|} var.name in
         Format.fprintf fmt {|%s@.{"data": %s}|} !delim obj);
-        (* Small hack to avoid trailing commas *)
-        delim := ","
+    (* Small hack to avoid trailing commas *)
+    delim := ","
   in
   Format.printf "writing vertices...@.";
   Graph.iter_vertex pp_vertex info.graph;
@@ -134,16 +134,20 @@ let to_json (fmt : Format.formatter) info : unit =
     let pp_none fmt () = fprintf fmt "" in
     let pp_opt = pp_print_option ~none:pp_none pp_string in
     let origin = Origin.to_json origin in
+    let def_if_binary = match !Config.platform with
+    | Binary -> Format.asprintf {|"def": "%a",|} pp_opt def
+    | Server _ -> ""
+    in
     Format.fprintf fmt
-      {|%s"%s": {"def": "%a", "value": "%a", "scope": "%s" %s %s}|} !delim
-      var_name pp_opt def Com.format_literal vval scope origin tgv_details;
+      {|%s"%s": {%s "value": "%a", "scope": "%s" %s %s}|} !delim
+      var_name def_if_binary Com.format_literal vval scope origin tgv_details;
     delim := ","
   in
   Format.fprintf fmt "],@.";
   Format.printf "writing info...@.";
   delim := "";
   Format.fprintf fmt {|"info": {@.|};
-  StrMap.iter print_info info.info;
+  StrMap.iter print_info info.infos;
   let print_const id const =
     let origin = Origin.to_json const.origin in
     Format.fprintf fmt {|%s@."%s": {"value": "%a", "kind": "const" %s}|} !delim
