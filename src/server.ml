@@ -75,6 +75,7 @@ let run socket payload =
       ServerDriver.run callbacks payload.filemap payload.irj_contents
         payload.target payload.application
     in
+    Format.printf "%s@." dbg_info;
     let msg = Msg.Out.run_ret @@ Ok dbg_info in
     Dream.send socket msg
   with

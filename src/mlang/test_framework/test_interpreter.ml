@@ -190,39 +190,41 @@ let check_test (program : Mir.program) (test_input : Irj_file.input)
         Cli.debug_print "Executing program %s" inst.label;
         (* Cli.debug_print "Combined Program (w/o verif conds):@.%a@."
            Format_bir.format_program program; *)
+        Format.printf "Executing program %s" inst.label;
         let varMap, anoSet, dbg_info =
           Mir_interpreter.evaluate_program program inst.vars inst.events
             value_sort round_ops dbg_flag
         in
+        print_endline "after";
         let target_dbg_info =
           match (dep_graph_file, dbg_info) with
           | None, None -> None
           | Some filename, Some dbg_info ->
               (* Add the input variables value - But only if they have not been set
                  (not set == origin = Declared) *)
-              let add_to_map var lit map =
-                let name = Com.Var.name_str var in
-                StrMap.update name
-                  (function
-                    | Some
-                        Dbg_info.Info.
-                          { origin = { code_orig = Declared; _ }; _ }
-                    | None ->
-                        let def = Some "input-set" in
-                        let rule_id = Dbg_info.Origin.Input in
-                        let file = "test_interpreter.ml" in
-                        let origin = Dbg_info.Origin.make file 0 rule_id in
-                        let info = Dbg_info.Info.make var def lit origin in
-                        Some info
-                    | oth -> oth)
-                  map
-              in
-              let info = Com.Var.Map.fold add_to_map inst.vars dbg_info.info in
-              let dbg_info = { dbg_info with info } in
+              (* Note: This does not easily work with ticks, we're gonna try not setting them. *)
+              (* let add_to_map var lit map = *)
+              (*   let name = Com.Var.name_str var in *)
+              (*   StrMap.update name *)
+              (*     (function *)
+              (*       | Some *)
+              (*           Dbg_info.Info. *)
+              (*             { origin = { code_orig = Declared; _ }; _ } *)
+              (*       | None -> *)
+              (*           let rule_id = Dbg_info.Origin.Input in *)
+              (*           let file = "test_interpreter.ml" in *)
+              (*           let origin = Dbg_info.Origin.make file 0 rule_id in *)
+              (*           let info = Dbg_info.Info.make name var lit origin in *)
+              (*           Some info *)
+              (*       | oth -> oth) *)
+              (*     map *)
+              (* in *)
+              (* let infos = Com.Var.Map.fold add_to_map inst.vars dbg_info.infos in *)
+              (* let dbg_info = { dbg_info with infos } in *)
               (match !Config.platform with
               | Binary -> Dbg_info.write_json_file filename dbg_info
-              | Web _ -> ());
-              let target_dbg_info = {dbg_info; target = inst.label } in
+              | Server _ -> ());
+              let target_dbg_info = { dbg_info; target = inst.label } in
               Some target_dbg_info
           | _ -> assert false
         in

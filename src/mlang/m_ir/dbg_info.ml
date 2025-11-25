@@ -21,48 +21,82 @@ end
 
 module Info = struct
   type t = {
+    name : string;
     var : Com.Var.t;
-    def : string option;
-    vval : Com.literal;
+    value : Com.literal;
     origin : Origin.t;
   }
   (* We've removed idx_opt, it may be needed for tables. *)
 
-  let make var def vval origin = { var; def; vval; origin }
+  let make name var value origin = { name; var; value; origin }
+end
+
+module Tick = struct
+  include Int
+
+  let inner = ref (-1)
+
+  let tick () =
+    incr inner;
+    !inner
+
+  module Map = struct
+    include IntMap
+  end
 end
 
 module Vertex = struct
   type kind = Literal | Var
 
-  type t = { kind : kind; name : String.t }
+  include Tick
+
+  (* Invariant (to be verified): All ticks are different *)
+  type t = Tick.t
 
   (* This feels weird, but String.hash was introduced in 5.0 *)
-  let hash t = Hashtbl.hash t.name
-
-  let compare a b = String.compare a.name b.name
-
-  let equal a b = String.equal a.name b.name
-
-  let name t = t.name
-
-  let lit name = { kind = Literal; name }
-
-  let var name = { kind = Var; name }
+  let hash t = Hashtbl.hash t
 end
 
 module Graph = Graph.Persistent.Digraph.Concrete (Vertex)
 
 module Const = struct
-  type t = { value : Com.literal; origin : Origin.t }
+  type t = { name : string; value : Com.literal; origin : Origin.t }
 
-  let make value fname line =
+  let make name value fname line =
     let origin = Origin.make fname line Const in
-    { value; origin }
+    { name; value; origin }
 end
 
-type t = { graph : Graph.t; infos : Info.t StrMap.t; consts : Const.t StrMap.t }
+module TickMap = struct
+  include StrMap
 
-let empty = { graph = Graph.empty; infos = StrMap.empty; consts = StrMap.empty }
+  let find name map =
+    match StrMap.find_opt name map with
+    | None ->
+        raise
+        @@ Failure
+             (Format.asprintf "could not find %s in tick_map %a" name
+                (StrMap.pp (fun fmt -> Format.fprintf fmt "%d"))
+                map)
+    | Some tick -> tick
+end
+
+type t = {
+  graph : Graph.t;
+  infos : Info.t IntMap.t;
+  consts : Const.t IntMap.t;
+  literals: string IntMap.t;
+  tick_name_map : Tick.t StrMap.t;
+}
+
+let empty =
+  {
+    graph = Graph.empty;
+    infos = IntMap.empty;
+    consts = IntMap.empty;
+    literals = IntMap.empty;
+    tick_name_map = StrMap.empty;
+  }
 
 let to_json (fmt : Format.formatter) info : unit =
   let open Format in
@@ -73,13 +107,14 @@ let to_json (fmt : Format.formatter) info : unit =
   Format.fprintf fmt "{\"graph\":[";
   let pp_vertex v =
     let var = Graph.V.label v in
-    (match var.kind with
-    | Literal ->
-        let obj = Format.asprintf {|{"kind": "lit", "value": %S}|} var.name in
-        Format.fprintf fmt {|%s@.{"data": %s}|} !delim obj
-    | Var ->
-        let obj = Format.asprintf {|{"name": "%s"}|} var.name in
-        Format.fprintf fmt {|%s@.{"data": %s}|} !delim obj);
+    Format.fprintf fmt {|%s@.{"data": %d}|} !delim var;
+    (* (match var.kind with *)
+    (* | Literal -> *)
+    (*     let obj = Format.asprintf {|{"kind": "lit", "value": %S}|} var.name in *)
+    (*     Format.fprintf fmt {|%s@.{"data": %s}|} !delim obj *)
+    (* | Var -> *)
+    (*     let obj = Format.asprintf {|{"name": "%s"}|} var.name in *)
+    (*     Format.fprintf fmt {|%s@.{"data": %s}|} !delim obj); *)
     (* Small hack to avoid trailing commas *)
     delim := ","
   in
@@ -88,13 +123,13 @@ let to_json (fmt : Format.formatter) info : unit =
   let print_edge (e : Graph.E.t) =
     let src = Graph.E.src e in
     let dst = Graph.E.dst e in
-    let src = Graph.V.label src |> Vertex.name in
-    let dst = Graph.V.label dst |> Vertex.name in
-    Format.fprintf fmt {|,@.{"data": {"source": "%s", "target": "%s"}}|} src dst
+    let src = Graph.V.label src in
+    let dst = Graph.V.label dst in
+    Format.fprintf fmt {|,@.{"data": {"source": "%d", "target": "%d"}}|} src dst
   in
   Format.printf "writing edges...@.";
   Graph.iter_edges_e print_edge info.graph;
-  let print_info var_name { var; def; vval; origin; _ } =
+  let print_info tick { name; var; value; origin; _ } =
     let scope =
       match var.scope with Tgv _ -> "tgv" | Temp _ -> "temp" | Ref -> "ref"
     in
@@ -130,31 +165,29 @@ let to_json (fmt : Format.formatter) info : unit =
           in
           str
     in
-    let pp_string fmt s = fprintf fmt "%s" s in
-    let pp_none fmt () = fprintf fmt "" in
-    let pp_opt = pp_print_option ~none:pp_none pp_string in
     let origin = Origin.to_json origin in
-    let def_if_binary = match !Config.platform with
-    | Binary -> Format.asprintf {|"def": "%a",|} pp_opt def
-    | Server _ -> ""
-    in
     Format.fprintf fmt
-      {|%s"%s": {%s "value": "%a", "scope": "%s" %s %s}|} !delim
-      var_name def_if_binary Com.format_literal vval scope origin tgv_details;
+      {|%s"%d": {"name": %S, "value": "%a", "scope": "%s" %s %s}|} !delim tick
+      name Com.format_literal value scope origin tgv_details;
     delim := ","
   in
   Format.fprintf fmt "],@.";
   Format.printf "writing info...@.";
   delim := "";
   Format.fprintf fmt {|"info": {@.|};
-  StrMap.iter print_info info.infos;
+  IntMap.iter print_info info.infos;
   let print_const id const =
+    Format.printf "Printing consts!!!!@.";
     let origin = Origin.to_json const.origin in
-    Format.fprintf fmt {|%s@."%s": {"value": "%a", "kind": "const" %s}|} !delim
+    Format.fprintf fmt {|%s@."%d": {"value": "%a", "kind": "const" %s}|} !delim
       id Com.format_literal const.value origin;
     delim := ","
   in
-  StrMap.iter print_const info.consts;
+  IntMap.iter print_const info.consts;
+  let print_lit id lit =
+    Format.fprintf fmt {|%s@."%d": %S|} !delim id lit;
+    delim := "," in
+  IntMap.iter print_lit info.literals;
   Format.fprintf fmt "}}@."
 
 let write_json_file filename info =
