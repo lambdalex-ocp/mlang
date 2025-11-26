@@ -24,14 +24,22 @@
   (:standard
    (:include linking-flags-mlang.sexp)))
  (libraries mlang platform_unix))
-
+;
+; (executable
+;  (name js_main)
+;  (modes js)
+;  (flags
+;   (:standard -g))
+;  (js_of_ocaml
+;   (flags --source-map))
+;  (preprocess
+;   (pps js_of_ocaml-ppx))
+;  (libraries m_ir mlang js_of_ocaml-lwt platform platform_js zarith_stubs_js))
+;
 (executable
- (name js_main)
- (modes js)
- (flags
-  (:standard -g))
- (js_of_ocaml
-  (flags --source-map))
- (preprocess
-  (pps js_of_ocaml-ppx))
- (libraries m_ir mlang js_of_ocaml-lwt platform platform_js zarith_stubs_js))
+  (name server)
+  (package mlang)
+  (flags (:standard -open Utils))
+  (public_name server)
+  (preprocess (pps lwt_ppx ppx_yojson_conv))
+  (libraries mlang platform platform_unix dream))
