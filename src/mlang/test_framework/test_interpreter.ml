@@ -1,4 +1,4 @@
-(* Copyright Inria, contributors: Raphaël Monat <raphael.monat@lip6.fr> (2019)
+(*Copyright Inria, contributors: Raphaël Monat <raphael.monat@lip6.fr> (2019)
 
    This program is free software: you can redistribute it and/or modify it under
    the terms of the GNU General Public License as published by the Free Software
@@ -186,14 +186,31 @@ let check_test (program : Mir.program) (test_input : Irj_file.input)
   let rec check = function
     | [] -> []
     | inst :: insts ->
-        let dbg_flag = Option.is_some dep_graph_file in
         Cli.debug_print "Executing program %s" inst.label;
         (* Cli.debug_print "Combined Program (w/o verif conds):@.%a@."
            Format_bir.format_program program; *)
         Format.printf "Executing program %s" inst.label;
+        let dbg_info = Dbg_info.empty in
+        let add_input_var_to_info var lit dbg_info =
+          let open Dbg_info in
+          let name = Com.Var.name_str var in
+          let pos = Com.Var.name var |> Pos.get in
+          let origin =
+            Origin.make (Pos.get_file pos) (Pos.get_start_line pos)
+              Origin.Declared
+          in
+          let info = Info.make name var lit origin in
+          let tick = Tick.tick () in
+          let infos = Tick.Map.add tick info dbg_info.infos in
+          let tick_name_map = StrMap.add name tick dbg_info.tick_name_map in
+          { dbg_info with infos; tick_name_map }
+        in
+        let dbg_info =
+          Com.Var.Map.fold add_input_var_to_info inst.vars dbg_info
+        in
         let varMap, anoSet, dbg_info =
           Mir_interpreter.evaluate_program program inst.vars inst.events
-            value_sort round_ops dbg_flag
+            value_sort round_ops (Some dbg_info)
         in
         print_endline "after";
         let target_dbg_info =

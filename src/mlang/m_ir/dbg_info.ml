@@ -179,13 +179,13 @@ let to_json (fmt : Format.formatter) info : unit =
   let print_const id const =
     Format.printf "Printing consts!!!!@.";
     let origin = Origin.to_json const.origin in
-    Format.fprintf fmt {|%s@."%d": {"value": "%a", "kind": "const" %s}|} !delim
-      id Com.format_literal const.value origin;
+    Format.fprintf fmt {|%s@."%d": {"name": %S, "value": "%a", "kind": "const" %s}|} !delim
+      id const.name Com.format_literal const.value origin;
     delim := ","
   in
   IntMap.iter print_const info.consts;
   let print_lit id lit =
-    Format.fprintf fmt {|%s@."%d": %S|} !delim id lit;
+    Format.fprintf fmt {|%s@."%d": {"name": %S}|} !delim id lit;
     delim := "," in
   IntMap.iter print_lit info.literals;
   Format.fprintf fmt "}}@."

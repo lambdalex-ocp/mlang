@@ -70,10 +70,9 @@ module type S = sig
       (value, Com.Var.t) Com.event_value Array.t Array.t list;
     mutable ctx_dbg_info : Dbg_info.t option;
     mutable ctx_exec_ctx : ctx_exec_ctx;
-    ctx_ics : string StrMap.t;
   }
 
-  val empty_ctx : Mir.program -> (* dbg_info *) bool -> ctx
+  val empty_ctx : Mir.program -> Dbg_info.t option -> ctx
 
   val literal_to_value : Com.literal -> value
 
@@ -173,10 +172,9 @@ struct
       (value, Com.Var.t) Com.event_value Array.t Array.t list;
     mutable ctx_dbg_info : Dbg_info.t option;
     mutable ctx_exec_ctx : ctx_exec_ctx;
-    ctx_ics : string StrMap.t;
   }
 
-  let empty_ctx (p : Mir.program) (dbg_flag : bool) : ctx =
+  let empty_ctx (p : Mir.program) (dbg_info : Dbg_info.t option) : ctx =
     let dummy_var = Com.Var.new_ref ~name:(Pos.without "") in
     let init_tmp_var _i = { var = dummy_var; value = Undefined } in
     let init_ref _i =
@@ -213,46 +211,24 @@ struct
       in
       Array.init (IntMap.cardinal p.program_var_spaces_idx) init
     in
-    let ctx_dbg_info =
-      match dbg_flag with
-      | false -> None
-      | true ->
-          let dbg_info = Dbg_info.empty in
-          (* Adding all declared variables here. *)
-          let add_to_map name var (tickmap, tick_name_map) =
-            let origin = Dbg_info.Origin.make "mir_interp.ml" 0 Declared in
-            let t = Dbg_info.Info.{ name; var; value = Undefined; origin } in
-            let tick = Dbg_info.Tick.tick () in
-            (IntMap.add tick t tickmap, StrMap.add name tick tick_name_map)
-          in
-          let infos, tick_name_map =
-            StrMap.fold add_to_map p.program_vars
-              (dbg_info.infos, dbg_info.tick_name_map)
-          in
-          Some { dbg_info with infos; tick_name_map }
-    in
-    let ctx_ics =
-      match dbg_flag with
-      | false -> StrMap.empty
-      | true -> (
-          match !Config.platform with
-          | Server filemap -> filemap
-          | Binary ->
-              let targets = StrMap.bindings p.program_targets |> List.map snd in
-              let filepaths =
-                List.filter_map (fun t -> t.Com.target_filepath) targets
-              in
-              let filepath_set = StrSet.of_list filepaths in
-              StrSet.fold
-                (fun path map ->
-                  let ic = open_in path in
-                  let contents = In_channel.input_all ic in
-                  let map = StrMap.add path contents map in
-                  In_channel.close ic;
-                  map)
-                filepath_set StrMap.empty)
-    in
-    {
+    let ctx_dbg_info = dbg_info in
+      (* match dbg_ with *)
+      (* | false -> None *)
+      (* | true -> *)
+      (*     let dbg_info = Dbg_info.empty in *)
+      (*     (* Adding all declared variables here. *) *)
+      (*     let add_to_map name var (tickmap, tick_name_map) = *)
+      (*       let origin = Dbg_info.Origin.make "mir_interp.ml" 0 Declared in *)
+      (*       let t = Dbg_info.Info.{ name; var; value = Undefined; origin } in *)
+      (*       let tick = Dbg_info.Tick.tick () in *)
+      (*       (IntMap.add tick t tickmap, StrMap.add name tick tick_name_map) *)
+      (*     in *)
+      (*     let infos, tick_name_map = *)
+      (*       StrMap.fold add_to_map p.program_vars *)
+      (*         (dbg_info.infos, dbg_info.tick_name_map) *)
+      (*     in *)
+      (*     Some { dbg_info with infos; tick_name_map } *)
+      {
       ctx_prog = p;
       ctx_target = snd (StrMap.min_binding p.program_targets);
       ctx_var_space = p.program_var_space_def.vs_id;
@@ -275,7 +251,6 @@ struct
       ctx_events = [];
       ctx_dbg_info;
       ctx_exec_ctx = CtxUndefined;
-      ctx_ics;
     }
 
   let literal_to_value (l : Com.literal) : value =
@@ -571,6 +546,7 @@ struct
         | Some dbg_info, _ ->
             let open Dbg_info in
             let tick = Tick.tick () in
+            let tick_name_map = dbg_info.tick_name_map in
             let eval_m_index ctx m_i =
               match evaluate_expr ctx m_i with
               | Number z -> Int64.to_string @@ N.to_int z
@@ -586,7 +562,6 @@ struct
               | Com.FieldAccess (_, _, _, _) -> Com.Var.name_str v
             in
             let name = access_name @@ Com.Var.name_str v in
-            let tick_name_map = TickMap.add name tick dbg_info.tick_name_map in
             (* Format.printf "setting %s@." name; *)
             let lit = value_to_literal value in
             let pos = Pos.get vexpr in
@@ -654,6 +629,7 @@ struct
                 ([], dbg_info) deps
             in
 
+            let tick_name_map = TickMap.add name tick tick_name_map in
             (* let const_names = List.map (fun c -> Vertex.var c.Com.id) consts in *)
             let add_edge graph deptick =
               let dep_vert = Dbg_info.Graph.V.create deptick in
@@ -663,7 +639,7 @@ struct
               List.fold_left add_edge graph ticks
             in
             ctx.ctx_dbg_info <-
-              Some { dbg_info with graph; infos }
+              Some { dbg_info with graph; infos; tick_name_map}
         )
 
   and evaluate_expr (ctx : ctx) (e : Mir.expression Pos.marked) : value =
@@ -1475,11 +1451,11 @@ let prepare_interp (sort : Config.value_sort) (roundops : Config.round_ops) :
 
 let evaluate_program (p : Mir.program) (inputs : Com.literal Com.Var.Map.t)
     (events : (Com.literal, Com.Var.t) Com.event_value StrMap.t list)
-    (sort : Config.value_sort) (roundops : Config.round_ops) (dbg_flag : bool) :
+    (sort : Config.value_sort) (roundops : Config.round_ops) (dbg_info: Dbg_info.t option) :
     Com.literal Com.Var.Map.t * Com.Error.Set.t * Dbg_info.t option =
   prepare_interp sort roundops;
   let module Interp = (val get_interp sort roundops : S) in
-  let ctx = Interp.empty_ctx p dbg_flag in
+  let ctx = Interp.empty_ctx p dbg_info in
   Interp.update_ctx_with_inputs ctx inputs;
   Interp.update_ctx_with_events ctx events;
   Interp.evaluate_program ctx;
@@ -1511,7 +1487,7 @@ let evaluate_program (p : Mir.program) (inputs : Com.literal Com.Var.Map.t)
   (varMap, anoSet, dbg_info)
 
 let evaluate_expr (p : Mir.program) (e : Mir.expression Pos.marked)
-    (sort : Config.value_sort) (roundops : Config.round_ops) (dbg_flag : bool) :
+    (sort : Config.value_sort) (roundops : Config.round_ops) (dbg_info : Dbg_info.t option) :
     Com.literal =
   let module Interp = (val get_interp sort roundops : S) in
-  Interp.value_to_literal (Interp.evaluate_expr (Interp.empty_ctx p dbg_flag) e)
+  Interp.value_to_literal (Interp.evaluate_expr (Interp.empty_ctx p dbg_info) e)
