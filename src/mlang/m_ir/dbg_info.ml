@@ -1,9 +1,16 @@
 module Origin = struct
   type code = Rule of int | Declared | Input | Target of string | Const
 
-  type t = { filename : string; line : int; code_orig : code }
+  type t = { filename : string; sline : int; eline : int; code_orig : code }
 
-  let make filename line code_orig = { filename; line; code_orig }
+  let make filename sline eline code_orig =
+    { filename; sline; eline; code_orig }
+
+  let make_from_pos pos code_orig =
+    let filename = Pos.get_file pos in
+    let sline = Pos.get_start_line pos in
+    let eline = Pos.get_end_line pos in
+    { filename; sline; eline; code_orig }
 
   let to_json origin =
     let code_orig =
@@ -15,8 +22,8 @@ module Origin = struct
       | Const -> "const"
     in
     Format.asprintf
-      {|, "origin": {"code_orig": "%s", "file": "%s", "line": %d }|} code_orig
-      origin.filename origin.line
+      {|"origin": {"code_orig": "%s", "file": "%s", "sline": %d, "eline": %d }|}
+      code_orig origin.filename origin.sline origin.eline
 end
 
 module Info = struct
@@ -62,9 +69,13 @@ module Graph = Graph.Persistent.Digraph.Concrete (Vertex)
 module Const = struct
   type t = { name : string; value : Com.literal; origin : Origin.t }
 
-  let make name value fname line =
-    let origin = Origin.make fname line Const in
+  let make name value fname sline eline =
+    let origin = Origin.make fname sline eline Const in
     { name; value; origin }
+
+  let make_from_pos name value pos =
+    let origin = Origin.make_from_pos pos Const in
+    {name;value;origin}
 end
 
 module TickMap = struct
@@ -73,11 +84,15 @@ module TickMap = struct
   let find name map =
     match StrMap.find_opt name map with
     | None ->
-        raise
-        @@ Failure
-             (Format.asprintf "could not find %s in tick_map %a" name
-                (StrMap.pp (fun fmt -> Format.fprintf fmt "%d"))
-                map)
+        let msg =
+          if StrMap.card map > 100 then
+            Format.asprintf "could not find %s in tick_map (too long).@." name
+          else
+            Format.asprintf "could not find %s in tick_map %a.@." name
+              (StrMap.pp (fun fmt -> Format.fprintf fmt "%d"))
+              map
+        in
+        raise @@ Failure msg
     | Some tick -> tick
 end
 
@@ -85,8 +100,8 @@ type t = {
   graph : Graph.t;
   infos : Info.t IntMap.t;
   consts : Const.t IntMap.t;
-  literals: string IntMap.t;
-  tick_name_map : Tick.t StrMap.t;
+  literals : string IntMap.t;
+  ledger : Tick.t StrMap.t;
 }
 
 let empty =
@@ -95,7 +110,7 @@ let empty =
     infos = IntMap.empty;
     consts = IntMap.empty;
     literals = IntMap.empty;
-    tick_name_map = StrMap.empty;
+    ledger = StrMap.empty;
   }
 
 let to_json (fmt : Format.formatter) info : unit =
@@ -130,45 +145,14 @@ let to_json (fmt : Format.formatter) info : unit =
   Format.printf "writing edges...@.";
   Graph.iter_edges_e print_edge info.graph;
   let print_info tick { name; var; value; origin; _ } =
-    let scope =
-      match var.scope with Tgv _ -> "tgv" | Temp _ -> "temp" | Ref -> "ref"
-    in
-    let tgv_details =
-      match var.scope with
-      | Temp _ | Ref -> ""
-      | Tgv _ ->
-          let is_input =
-            match Com.Var.cat_var_loc var with
-            | Com.CatVar.LocInput -> true
-            | _ -> false
-          in
-          let cat = Com.Var.cat var in
-          let attrs =
-            let wrap s _ acc =
-              let wrapped = Format.asprintf {|"%s"|} s in
-              wrapped :: acc
-            in
-            StrMap.fold wrap (Com.Var.attrs var) []
-            |> String.concat ", " |> Format.asprintf "[%s]"
-          in
-          let given_back = Com.Var.is_given_back var in
-          let descr =
-            Pos.unmark @@ Com.Var.descr var
-            |> String.map (fun c -> if c == '\t' then ' ' else c)
-          in
-          let str =
-            Format.asprintf
-              {|, "tgv_details": {
-      "cat": "%a", "is_input": %b, "given_back": %b, "attrs": %s, "descr": "%s"
-    }|}
-              Com.CatVar.pp cat is_input given_back attrs descr
-          in
-          str
-    in
+    let is_input = match Com.Var.cat_var_loc var with
+    | Com.CatVar.LocInput -> true
+    | exception Failure _
+    | _ -> false in
     let origin = Origin.to_json origin in
     Format.fprintf fmt
-      {|%s"%d": {"name": %S, "value": "%a", "scope": "%s" %s %s}|} !delim tick
-      name Com.format_literal value scope origin tgv_details;
+      {|%s@."%d": {"name": %S, "value": "%a", "is_input": %b, %s}|} !delim tick
+      name Com.format_literal value is_input origin;
     delim := ","
   in
   Format.fprintf fmt "],@.";
@@ -179,14 +163,16 @@ let to_json (fmt : Format.formatter) info : unit =
   let print_const id const =
     Format.printf "Printing consts!!!!@.";
     let origin = Origin.to_json const.origin in
-    Format.fprintf fmt {|%s@."%d": {"name": %S, "value": "%a", "kind": "const" %s}|} !delim
-      id const.name Com.format_literal const.value origin;
+    Format.fprintf fmt
+      {|%s@."%d": {"name": %S, "value": "%a", "kind": "const", %s}|} !delim id
+      const.name Com.format_literal const.value origin;
     delim := ","
   in
   IntMap.iter print_const info.consts;
   let print_lit id lit =
     Format.fprintf fmt {|%s@."%d": {"name": %S}|} !delim id lit;
-    delim := "," in
+    delim := ","
+  in
   IntMap.iter print_lit info.literals;
   Format.fprintf fmt "}}@."
 

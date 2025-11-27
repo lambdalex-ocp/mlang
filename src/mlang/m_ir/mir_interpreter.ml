@@ -212,23 +212,27 @@ struct
       Array.init (IntMap.cardinal p.program_var_spaces_idx) init
     in
     let ctx_dbg_info = dbg_info in
-      (* match dbg_ with *)
-      (* | false -> None *)
-      (* | true -> *)
-      (*     let dbg_info = Dbg_info.empty in *)
-      (*     (* Adding all declared variables here. *) *)
-      (*     let add_to_map name var (tickmap, tick_name_map) = *)
-      (*       let origin = Dbg_info.Origin.make "mir_interp.ml" 0 Declared in *)
-      (*       let t = Dbg_info.Info.{ name; var; value = Undefined; origin } in *)
-      (*       let tick = Dbg_info.Tick.tick () in *)
-      (*       (IntMap.add tick t tickmap, StrMap.add name tick tick_name_map) *)
-      (*     in *)
-      (*     let infos, tick_name_map = *)
-      (*       StrMap.fold add_to_map p.program_vars *)
-      (*         (dbg_info.infos, dbg_info.tick_name_map) *)
-      (*     in *)
-      (*     Some { dbg_info with infos; tick_name_map } *)
-      {
+    (*FIXME: This ought to be removed -- i don't think that we should add declaration as a tick.
+      I think we can only log usage of non-declared variable as undefined at that point. *)
+    (*   match dbg_info with *)
+    (*   | Some dbg_info -> *)
+    (*       let open Dbg_info in *)
+    (*       let add_to_map name var dbg_info = *)
+    (*         match StrMap.mem name dbg_info.ledger with *)
+    (*         | true -> dbg_info *)
+    (*         | false -> *)
+    (*             let tick = Tick.tick () in *)
+    (*             let pos = Com.Var.name var |> Pos.get in *)
+    (*             let origin = Origin.make_from_pos pos Declared in *)
+    (*             let info = Info.make name var Undefined origin in *)
+    (*             let infos = Tick.Map.add tick info dbg_info.infos in *)
+    (*             let ledger = StrMap.add name tick dbg_info.ledger in *)
+    (*             { dbg_info with infos; ledger } *)
+    (*       in *)
+    (*       Some (StrMap.fold add_to_map p.program_vars dbg_info) *)
+    (*   | None -> None *)
+    (* in *)
+    {
       ctx_prog = p;
       ctx_target = snd (StrMap.min_binding p.program_targets);
       ctx_var_space = p.program_var_space_def.vs_id;
@@ -546,11 +550,77 @@ struct
         | Some dbg_info, _ ->
             let open Dbg_info in
             let tick = Tick.tick () in
-            let tick_name_map = dbg_info.tick_name_map in
+
             let eval_m_index ctx m_i =
               match evaluate_expr ctx m_i with
               | Number z -> Int64.to_string @@ N.to_int z
               | Undefined -> "indefini"
+            in
+            let deps = Com.get_used_variables @@ Pos.unmark vexpr in
+            let ticks, dbg_info =
+              List.fold_left
+                (fun (ticks, dbg_info) dep ->
+                  match fst dep with
+                  | Com.V var ->
+                      let name = Com.Var.name_str var in
+                      (* For now, we add uninstantiated depedencies as undefined *)
+                      begin
+                        match TickMap.find name dbg_info.ledger with
+                        | exception Failure msg ->
+                            Format.fprintf Format.err_formatter "%s" msg;
+                            let tick = Tick.tick () in
+                            Format.fprintf Format.err_formatter
+                              "it will have tick: %d@." tick;
+                            let pos = Com.Var.name var |> Pos.get in
+                            let origin = Origin.make_from_pos pos Declared in
+                            let info = Info.make name var Undefined origin in
+                            let ledger = StrMap.add name tick dbg_info.ledger in
+                            let infos = Tick.Map.add tick info dbg_info.infos in
+                            let dbg_info = { dbg_info with ledger; infos } in
+                            (tick :: ticks, dbg_info)
+                        | tick -> (tick :: ticks, dbg_info)
+                      end
+                  | Const const ->
+                      let name = const.Com.id in
+                      begin
+                        match TickMap.find name dbg_info.ledger with
+                        | tick -> (tick :: ticks, dbg_info)
+                        | exception Failure _ ->
+                            let tick = Tick.tick () in
+                            let const =
+                              Const.make_from_pos name const.Com.value const.pos
+                            in
+                            let consts = Tick.Map.add tick const dbg_info.consts in
+                            let ledger = StrMap.add name tick dbg_info.ledger in
+                            let dbg_info = { dbg_info with consts; ledger } in
+                            (tick :: ticks, dbg_info)
+                      end
+                  | Tab (var, m_i) ->
+                      let name = Com.Var.name_str var in
+                      let idx_str = eval_m_index ctx m_i in
+                      (* FIXME: i have no idea how to handle tabs *)
+                      let name = Format.asprintf "%s[%s]" name idx_str in
+                      begin
+                        match TickMap.find name dbg_info.ledger with
+                        | exception Failure _ ->
+                            let tick = Tick.tick () in
+                            let pos = Com.Var.name var |> Pos.get in
+                            let origin = Origin.make_from_pos pos Declared in
+                            let info = Info.make name var Undefined origin in
+                            let ledger = StrMap.add name tick dbg_info.ledger in
+                            let infos = Tick.Map.add tick info dbg_info.infos in
+                            let dbg_info = { dbg_info with ledger; infos } in
+                            (tick :: ticks, dbg_info)
+                        | tick -> (tick :: ticks, dbg_info)
+                      end
+                  | LiteralDep _lit -> (ticks, dbg_info))
+                (* let tick = Tick.tick () in *)
+                (* let str = Format.asprintf "$%a" Com.format_literal lit in *)
+                (* let literals = Tick.Map.add tick str dbg_info.literals in *)
+                (* let dbg_info = { dbg_info with literals } in *)
+                (* (tick :: ticks, dbg_info)) *)
+                ([], dbg_info)
+                deps
             in
             let access_name name =
               match access with
@@ -562,10 +632,8 @@ struct
               | Com.FieldAccess (_, _, _, _) -> Com.Var.name_str v
             in
             let name = access_name @@ Com.Var.name_str v in
-            (* Format.printf "setting %s@." name; *)
             let lit = value_to_literal value in
             let pos = Pos.get vexpr in
-            let filename = Pos.get_file pos in
             (* we should do that only if we've not done it yet. *)
             let rule_id =
               match ctx.ctx_exec_ctx with
@@ -573,10 +641,8 @@ struct
               | CtxTarget s -> Dbg_info.Origin.Target s
               | CtxUndefined -> raise @@ Failure "no rule id"
             in
-            let file = Filename.basename filename in
-            let origin =
-              Dbg_info.Origin.make file (Pos.get_start_line pos) rule_id
-            in
+            let origin = Origin.make_from_pos pos rule_id in
+            (* Format.printf "setting %s (%s)@." name @@ Origin.to_json origin; *)
             let info = Dbg_info.Info.make name v lit origin in
             let infos = Tick.Map.add tick info dbg_info.infos in
             let _ =
@@ -595,52 +661,14 @@ struct
             in
             let vert = Dbg_info.Graph.V.create tick in
             let graph = dbg_info.graph in
-            let deps = Com.get_used_variables @@ Pos.unmark vexpr in
-            let ticks, dbg_info =
-              List.fold_left
-                (fun (ticks, dbg_info) dep ->
-                  match fst dep with
-                  | Com.V var ->
-                      let name = Com.Var.name_str var in
-                      let tick = TickMap.find name tick_name_map in
-                      (tick :: ticks, dbg_info)
-                  | Const const ->
-                      let tick = Tick.tick () in
-                      let id = const.Com.id in
-                      let fname = Filename.basename @@ Pos.get_file const.pos in
-                      let line = Pos.get_start_line const.pos in
-                      let const = Const.make id const.Com.value fname line in
-                      let consts = Tick.Map.add tick const dbg_info.consts in
-                      let dbg_info = { dbg_info with consts } in
-                      tick :: ticks, dbg_info
-                  | Tab (var, m_i) ->
-                      let name = Com.Var.name_str var in
-                      let idx_str = eval_m_index ctx m_i in
-                      (* FIXME: i have no idea how to handle tabs *)
-                      let name = Format.asprintf "%s[%s]" name idx_str in
-                      let tick = TickMap.find name tick_name_map in
-                      tick::ticks, dbg_info
-                  | LiteralDep lit ->
-                      let tick = Tick.tick () in
-                      let str = Format.asprintf "$%a" Com.format_literal lit in
-                      let literals = Tick.Map.add tick str dbg_info.literals in
-                      let dbg_info = { dbg_info with literals } in
-                      tick :: ticks, dbg_info)
-                ([], dbg_info) deps
-            in
-
-            let tick_name_map = TickMap.add name tick tick_name_map in
             (* let const_names = List.map (fun c -> Vertex.var c.Com.id) consts in *)
             let add_edge graph deptick =
               let dep_vert = Dbg_info.Graph.V.create deptick in
               Dbg_info.Graph.add_edge graph vert dep_vert
             in
-            let graph =
-              List.fold_left add_edge graph ticks
-            in
-            ctx.ctx_dbg_info <-
-              Some { dbg_info with graph; infos; tick_name_map}
-        )
+            let graph = List.fold_left add_edge graph ticks in
+            let ledger = TickMap.add name tick dbg_info.ledger in
+            ctx.ctx_dbg_info <- Some { dbg_info with graph; infos; ledger })
 
   and evaluate_expr (ctx : ctx) (e : Mir.expression Pos.marked) : value =
     let comparison op new_e1 new_e2 =
@@ -1451,7 +1479,8 @@ let prepare_interp (sort : Config.value_sort) (roundops : Config.round_ops) :
 
 let evaluate_program (p : Mir.program) (inputs : Com.literal Com.Var.Map.t)
     (events : (Com.literal, Com.Var.t) Com.event_value StrMap.t list)
-    (sort : Config.value_sort) (roundops : Config.round_ops) (dbg_info: Dbg_info.t option) :
+    (sort : Config.value_sort) (roundops : Config.round_ops)
+    (dbg_info : Dbg_info.t option) :
     Com.literal Com.Var.Map.t * Com.Error.Set.t * Dbg_info.t option =
   prepare_interp sort roundops;
   let module Interp = (val get_interp sort roundops : S) in
@@ -1487,7 +1516,7 @@ let evaluate_program (p : Mir.program) (inputs : Com.literal Com.Var.Map.t)
   (varMap, anoSet, dbg_info)
 
 let evaluate_expr (p : Mir.program) (e : Mir.expression Pos.marked)
-    (sort : Config.value_sort) (roundops : Config.round_ops) (dbg_info : Dbg_info.t option) :
-    Com.literal =
+    (sort : Config.value_sort) (roundops : Config.round_ops)
+    (dbg_info : Dbg_info.t option) : Com.literal =
   let module Interp = (val get_interp sort roundops : S) in
   Interp.value_to_literal (Interp.evaluate_expr (Interp.empty_ctx p dbg_info) e)
