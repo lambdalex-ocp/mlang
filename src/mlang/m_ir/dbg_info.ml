@@ -12,6 +12,8 @@ module Origin = struct
     let eline = Pos.get_end_line pos in
     { filename; sline; eline; code_orig }
 
+  let hash (t: t) = Hashtbl.hash t
+
   let to_json origin =
     let code_orig =
       match origin.code_orig with
@@ -36,6 +38,20 @@ module Info = struct
   (* We've removed idx_opt, it may be needed for tables. *)
 
   let make name var value origin = { name; var; value; origin }
+
+  module Runtime = struct
+    type t = { hash : int; value : Com.literal; name : string option}
+
+    let make origin value name = { hash = Origin.hash origin; value; name }
+  end
+
+  module Static = struct
+    type t = { name : string; origin : Origin.t; is_input : bool;
+    descr: string option}
+
+    let make name origin is_input descr =
+      {name; origin; is_input; descr}
+  end
 end
 
 module Tick = struct
@@ -75,7 +91,7 @@ module Const = struct
 
   let make_from_pos name value pos =
     let origin = Origin.make_from_pos pos Const in
-    {name;value;origin}
+    { name; value; origin }
 end
 
 module TickMap = struct
@@ -98,7 +114,8 @@ end
 
 type t = {
   graph : Graph.t;
-  infos : Info.t IntMap.t;
+  runtimes : Info.Runtime.t Tick.Map.t;
+  statics : Info.Static.t IntMap.t;
   consts : Const.t IntMap.t;
   literals : string IntMap.t;
   ledger : Tick.t StrMap.t;
@@ -107,7 +124,8 @@ type t = {
 let empty =
   {
     graph = Graph.empty;
-    infos = IntMap.empty;
+    runtimes = Tick.Map.empty;
+    statics = IntMap.empty;
     consts = IntMap.empty;
     literals = IntMap.empty;
     ledger = StrMap.empty;
@@ -115,14 +133,15 @@ let empty =
 
 let to_json (fmt : Format.formatter) info : unit =
   let open Format in
-  let open Info in
+  let open Info.Static in
+  let open Info.Runtime in
   let open Const in
   let open Vertex in
   let delim = ref "" in
-  Format.fprintf fmt "{\"graph\":[";
+  Format.fprintf fmt {|{"graph":{@. "nodes": [|};
   let pp_vertex v =
     let var = Graph.V.label v in
-    Format.fprintf fmt {|%s@.{"data": %d}|} !delim var;
+    Format.fprintf fmt {|%s@.{"data": "%d"}|} !delim var;
     (* (match var.kind with *)
     (* | Literal -> *)
     (*     let obj = Format.asprintf {|{"kind": "lit", "value": %S}|} var.name in *)
@@ -135,31 +154,47 @@ let to_json (fmt : Format.formatter) info : unit =
   in
   Format.printf "writing vertices...@.";
   Graph.iter_vertex pp_vertex info.graph;
+  fprintf fmt {|],@. "edges": [|};
   let print_edge (e : Graph.E.t) =
     let src = Graph.E.src e in
     let dst = Graph.E.dst e in
     let src = Graph.V.label src in
     let dst = Graph.V.label dst in
-    Format.fprintf fmt {|,@.{"data": {"source": "%d", "target": "%d"}}|} src dst
-  in
-  Format.printf "writing edges...@.";
-  Graph.iter_edges_e print_edge info.graph;
-  let print_info tick { name; var; value; origin; _ } =
-    let is_input = match Com.Var.cat_var_loc var with
-    | Com.CatVar.LocInput -> true
-    | exception Failure _
-    | _ -> false in
-    let origin = Origin.to_json origin in
-    Format.fprintf fmt
-      {|%s@."%d": {"name": %S, "value": "%a", "is_input": %b, %s}|} !delim tick
-      name Com.format_literal value is_input origin;
+    Format.fprintf fmt {|%s@.{"data": {"source": "%d", "target": "%d"}}|} 
+    !delim src dst;
     delim := ","
   in
-  Format.fprintf fmt "],@.";
+  delim := "";
+  Format.printf "writing edges...@.";
+  Graph.iter_edges_e print_edge info.graph;
+  let print_static_info hash { name; origin; is_input; descr} =
+    let origin = Origin.to_json origin in
+    let descr = match descr with
+    | None -> ""
+    | Some descr -> 
+        let descr = Yojson.Safe.to_string (`String descr) in
+        asprintf {|"descr": %s,|} descr in
+    Format.fprintf fmt {|%s@."%d": {"name": %S, "is_input": %b, %s %s}|} !delim
+      hash name is_input descr origin;
+    delim := ","
+  in
+  Format.fprintf fmt "]},@.";
   Format.printf "writing info...@.";
   delim := "";
-  Format.fprintf fmt {|"info": {@.|};
-  IntMap.iter print_info info.infos;
+  Format.fprintf fmt {|"statics": {@.|};
+  IntMap.iter print_static_info info.statics;
+  Format.fprintf fmt "},@.";
+  delim := "";
+  Format.fprintf fmt {|"runtimes": {@.|};
+  let print_runtime_info tick { value; hash; name} =
+    let name = match name with
+    | None -> ""
+    | Some name -> asprintf {|, "name" : %S|} name in
+    Format.fprintf fmt {|%s@."%d": {"value": "%a", "hash": %d %s}|} !delim tick
+      Com.format_literal value hash name;
+    delim := ","
+  in
+  Tick.Map.iter print_runtime_info info.runtimes;
   let print_const id const =
     Format.printf "Printing consts!!!!@.";
     let origin = Origin.to_json const.origin in

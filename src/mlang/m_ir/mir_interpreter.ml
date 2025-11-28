@@ -573,10 +573,14 @@ struct
                               "it will have tick: %d@." tick;
                             let pos = Com.Var.name var |> Pos.get in
                             let origin = Origin.make_from_pos pos Declared in
-                            let info = Info.make name var Undefined origin in
                             let ledger = StrMap.add name tick dbg_info.ledger in
-                            let infos = Tick.Map.add tick info dbg_info.infos in
-                            let dbg_info = { dbg_info with ledger; infos } in
+                            let runtime = Info.Runtime.make origin Undefined (Some name) in
+                            let runtimes =
+                              Tick.Map.add tick runtime dbg_info.runtimes
+                            in
+                            let static = Info.Static.make name origin false None in
+                            let statics = IntMap.add runtime.hash static dbg_info.statics in
+                            let dbg_info = { dbg_info with ledger; runtimes; statics } in
                             (tick :: ticks, dbg_info)
                         | tick -> (tick :: ticks, dbg_info)
                       end
@@ -590,7 +594,9 @@ struct
                             let const =
                               Const.make_from_pos name const.Com.value const.pos
                             in
-                            let consts = Tick.Map.add tick const dbg_info.consts in
+                            let consts =
+                              Tick.Map.add tick const dbg_info.consts
+                            in
                             let ledger = StrMap.add name tick dbg_info.ledger in
                             let dbg_info = { dbg_info with consts; ledger } in
                             (tick :: ticks, dbg_info)
@@ -606,10 +612,14 @@ struct
                             let tick = Tick.tick () in
                             let pos = Com.Var.name var |> Pos.get in
                             let origin = Origin.make_from_pos pos Declared in
-                            let info = Info.make name var Undefined origin in
                             let ledger = StrMap.add name tick dbg_info.ledger in
-                            let infos = Tick.Map.add tick info dbg_info.infos in
-                            let dbg_info = { dbg_info with ledger; infos } in
+                            let runtime = Info.Runtime.make origin Undefined (Some name) in
+                            let runtimes =
+                              Tick.Map.add tick runtime dbg_info.runtimes
+                            in
+                            let static = Info.Static.make name origin false None in
+                            let statics = IntMap.add runtime.hash static dbg_info.statics in
+                            let dbg_info = { dbg_info with ledger; runtimes; statics } in
                             (tick :: ticks, dbg_info)
                         | tick -> (tick :: ticks, dbg_info)
                       end
@@ -632,7 +642,11 @@ struct
               | Com.FieldAccess (_, _, _, _) -> Com.Var.name_str v
             in
             let name = access_name @@ Com.Var.name_str v in
-            let lit = value_to_literal value in
+            let is_input =
+              match Com.Var.cat_var_loc v with
+              | Com.CatVar.LocInput -> true
+              | (exception Failure _) | _ -> false
+            in
             let pos = Pos.get vexpr in
             (* we should do that only if we've not done it yet. *)
             let rule_id =
@@ -641,24 +655,16 @@ struct
               | CtxTarget s -> Dbg_info.Origin.Target s
               | CtxUndefined -> raise @@ Failure "no rule id"
             in
+            let lit_value = value_to_literal value in
+            let descr = match Com.Var.descr_str v with
+            | exception _ -> None 
+            | descr -> Some descr in
             let origin = Origin.make_from_pos pos rule_id in
             (* Format.printf "setting %s (%s)@." name @@ Origin.to_json origin; *)
-            let info = Dbg_info.Info.make name v lit origin in
-            let infos = Tick.Map.add tick info dbg_info.infos in
-            let _ =
-              match IntMap.find_opt tick dbg_info.infos with
-              | Some { origin = { code_orig = Declared; _ }; _ } -> ()
-              | Some _old_info ->
-                  if name = "VARTMP1" || name = "VARTMP2" then ()
-                  else ()
-                    (* Format.printf "rewriting %s@." name; *)
-                    (* Format.printf "last value: %a | from: %s@.now: %a | from: %s@."  *)
-                    (*   Com.format_literal old_info.vval *)
-                    (*   (Origin.to_json old_info.origin) *)
-                    (*   Com.format_literal info.vval *)
-                    (*   @@ Origin.to_json info.origin) *)
-              | None -> ()
-            in
+            let runtime = Info.Runtime.make origin lit_value (Some name) in
+            let runtimes = Tick.Map.add tick runtime dbg_info.runtimes in
+            let static = Info.Static.make name origin is_input descr in
+            let statics = IntMap.add runtime.hash static dbg_info.statics in
             let vert = Dbg_info.Graph.V.create tick in
             let graph = dbg_info.graph in
             (* let const_names = List.map (fun c -> Vertex.var c.Com.id) consts in *)
@@ -668,7 +674,8 @@ struct
             in
             let graph = List.fold_left add_edge graph ticks in
             let ledger = TickMap.add name tick dbg_info.ledger in
-            ctx.ctx_dbg_info <- Some { dbg_info with graph; infos; ledger })
+            ctx.ctx_dbg_info <-
+              Some { dbg_info with graph; runtimes; statics; ledger })
 
   and evaluate_expr (ctx : ctx) (e : Mir.expression Pos.marked) : value =
     let comparison op new_e1 new_e2 =
