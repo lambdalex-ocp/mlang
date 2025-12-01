@@ -28,6 +28,20 @@ module Origin = struct
       code_orig origin.filename origin.sline origin.eline
 end
 
+module Tick = struct
+  include Int
+
+  let inner = ref (-1)
+
+  let tick () =
+    incr inner;
+    !inner
+
+  module Map = struct
+    include IntMap
+  end
+end
+
 module Info = struct
   type t = {
     name : string;
@@ -54,18 +68,16 @@ module Info = struct
   end
 end
 
-module Tick = struct
-  include Int
+module Const = struct
+  type t = { name : string; value : Com.literal; origin : Origin.t }
 
-  let inner = ref (-1)
+  let make name value fname sline eline =
+    let origin = Origin.make fname sline eline Const in
+    { name; value; origin }
 
-  let tick () =
-    incr inner;
-    !inner
-
-  module Map = struct
-    include IntMap
-  end
+  let make_from_pos name value pos =
+    let origin = Origin.make_from_pos pos Const in
+    { name; value; origin }
 end
 
 module Vertex = struct
@@ -81,19 +93,6 @@ module Vertex = struct
 end
 
 module Graph = Graph.Persistent.Digraph.Concrete (Vertex)
-
-module Const = struct
-  type t = { name : string; value : Com.literal; origin : Origin.t }
-
-  let make name value fname sline eline =
-    let origin = Origin.make fname sline eline Const in
-    { name; value; origin }
-
-  let make_from_pos name value pos =
-    let origin = Origin.make_from_pos pos Const in
-    { name; value; origin }
-end
-
 module TickMap = struct
   include StrMap
 
@@ -142,13 +141,6 @@ let to_json (fmt : Format.formatter) info : unit =
   let pp_vertex v =
     let var = Graph.V.label v in
     Format.fprintf fmt {|%s@.{"data": "%d"}|} !delim var;
-    (* (match var.kind with *)
-    (* | Literal -> *)
-    (*     let obj = Format.asprintf {|{"kind": "lit", "value": %S}|} var.name in *)
-    (*     Format.fprintf fmt {|%s@.{"data": %s}|} !delim obj *)
-    (* | Var -> *)
-    (*     let obj = Format.asprintf {|{"name": "%s"}|} var.name in *)
-    (*     Format.fprintf fmt {|%s@.{"data": %s}|} !delim obj); *)
     (* Small hack to avoid trailing commas *)
     delim := ","
   in
