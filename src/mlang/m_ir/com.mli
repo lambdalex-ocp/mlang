@@ -334,11 +334,13 @@ and 'v m_expression = 'v expression Pos.marked [@@deriving show, yojson]
 
 type const = { id : string; value : literal; pos : Pos.t }
 
-type 'v dep = 
+type 'v dep =
   | Tab of 'v * 'v m_expression
   | V of 'v
   | LiteralDep of literal
-  | Const of const [@@deriving show, yojson]
+  | Const of const
+[@@deriving show, yojson]
+
 val get_used_variables : 'v expression -> ('v dep * 'v expression option) list
 
 val mk_atomlit : literal -> 'v atom

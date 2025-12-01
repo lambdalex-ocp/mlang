@@ -464,6 +464,14 @@ type variable_space = {
 
 type literal = Float of float | Undefined [@@deriving show, yojson]
 
+let format_literal fmt l =
+  match l with
+  | Float f -> 
+      Format.fprintf fmt "%g" f
+  | Undefined -> Format.pp_print_string fmt "indefini"
+
+
+
 type origin = string Pos.marked option [@@deriving show, yojson]
 
 type literal_with_orig = { lit : literal; origin : origin }
@@ -563,9 +571,12 @@ and 'v m_expression = 'v expression Pos.marked [@@deriving show, yojson]
 type const = { id : string; value : literal; pos : Pos.t }
 [@@deriving show, yojson]
 
-type 'v dep = Tab of 'v * 'v m_expression | V of 'v 
-| LiteralDep of literal
-| Const of const [@@deriving show, yojson]
+type 'v dep =
+  | Tab of 'v * 'v m_expression
+  | V of 'v
+  | LiteralDep of literal
+  | Const of const
+[@@deriving show, yojson]
 
 (* This code was taken from Noe and adapted to the 2025 var architecture *)
 let get_used_variables (e : 'v expression) :
@@ -1176,8 +1187,10 @@ let format_value_typ fmt t =
     | Real -> "REEL")
 
 let format_literal fmt l =
-  Format.pp_print_string fmt
-    (match l with Float f -> string_of_float f | Undefined -> "indefini")
+  match l with
+  | Float f -> 
+      Format.fprintf fmt "%g" f
+  | Undefined -> Format.pp_print_string fmt "indefini"
 
 let format_atom form_var fmt vl =
   match vl with
