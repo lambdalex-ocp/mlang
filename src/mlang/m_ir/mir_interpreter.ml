@@ -212,26 +212,6 @@ struct
       Array.init (IntMap.cardinal p.program_var_spaces_idx) init
     in
     let ctx_dbg_info = dbg_info in
-    (*FIXME: This ought to be removed -- i don't think that we should add declaration as a tick.
-      I think we can only log usage of non-declared variable as undefined at that point. *)
-    (*   match dbg_info with *)
-    (*   | Some dbg_info -> *)
-    (*       let open Dbg_info in *)
-    (*       let add_to_map name var dbg_info = *)
-    (*         match StrMap.mem name dbg_info.ledger with *)
-    (*         | true -> dbg_info *)
-    (*         | false -> *)
-    (*             let tick = Tick.tick () in *)
-    (*             let pos = Com.Var.name var |> Pos.get in *)
-    (*             let origin = Origin.make_from_pos pos Declared in *)
-    (*             let info = Info.make name var Undefined origin in *)
-    (*             let infos = Tick.Map.add tick info dbg_info.infos in *)
-    (*             let ledger = StrMap.add name tick dbg_info.ledger in *)
-    (*             { dbg_info with infos; ledger } *)
-    (*       in *)
-    (*       Some (StrMap.fold add_to_map p.program_vars dbg_info) *)
-    (*   | None -> None *)
-    (* in *)
     {
       ctx_prog = p;
       ctx_target = snd (StrMap.min_binding p.program_targets);
@@ -583,7 +563,6 @@ struct
       | Tab (var, m_i) ->
           let name = Com.Var.name_str var in
           let idx_str = eval_m_index ctx m_i in
-          (* FIXME: i have no idea how to handle tabs *)
           let name = Format.asprintf "%s[%s]" name idx_str in
           begin
             match TickMap.find name dbg_info.ledger with
@@ -616,11 +595,13 @@ struct
         (* | _, CtxTarget "effacer_base_etc" *)
         (* | _, CtxTarget "effacer_avfisc_1" *)
         (* | _, CtxTarget "effacer_calculee_etc" -> *)
-            (* () *)
+        (* () *)
         | Some dbg_info, _ ->
             let open Dbg_info in
             let deps = Com.get_used_variables @@ Pos.unmark vexpr in
             let ticks, dbg_info = trace_deps deps dbg_info ctx in
+            (* Create the tick for this  variable after the deps so that they are 
+               in the right order on marple side. *)
             let tick = Tick.tick () in
             let access_name name =
               match access with
@@ -638,11 +619,11 @@ struct
               | (exception Failure _) | _ -> false
             in
             let pos = Pos.get vexpr in
-            (* we should do that only if we've not done it yet. *)
             let rule_id =
               match ctx.ctx_exec_ctx with
               | CtxRule i -> Dbg_info.Origin.Rule i
               | CtxTarget s -> Dbg_info.Origin.Target s
+              (* FIXME: This is a debug failure, do not release as-if *)
               | CtxUndefined -> raise @@ Failure "no rule id"
             in
             let lit_value = value_to_literal value in
@@ -652,14 +633,12 @@ struct
               | descr -> Some descr
             in
             let origin = Origin.make_from_pos pos rule_id in
-            (* Format.printf "setting %s (%s)@." name @@ Origin.to_json origin; *)
             let runtime = Info.Runtime.make origin lit_value (Some name) in
             let runtimes = Tick.Map.add tick runtime dbg_info.runtimes in
             let static = Info.Static.make name origin is_input descr in
             let statics = IntMap.add runtime.hash static dbg_info.statics in
             let vert = Dbg_info.Graph.V.create tick in
             let graph = dbg_info.graph in
-            (* let const_names = List.map (fun c -> Vertex.var c.Com.id) consts in *)
             let add_edge graph deptick =
               let dep_vert = Dbg_info.Graph.V.create deptick in
               Dbg_info.Graph.add_edge graph vert dep_vert
