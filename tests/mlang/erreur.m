@@ -11,7 +11,7 @@ X = 3;
 verif 1:
 application: app;
 
-si X < 1 alors erreur A100;
+si X > 1 alors erreur A100;
 
 cible target:
 application: app;
