@@ -785,10 +785,10 @@ let rec access_map_var f = function
   | VarAccess (m_sp_opt, v) -> VarAccess (m_sp_opt, f v)
   | TabAccess (m_sp_opt, v, m_i) ->
       let v' = f v in
-      let m_i' = m_expr_map_var f m_i in
+      let m_i' = Pos.map (expr_map_var f) m_i in
       TabAccess (m_sp_opt, v', m_i')
   | FieldAccess (m_sp_opt, m_i, field, id) ->
-      let m_i' = m_expr_map_var f m_i in
+      let m_i' = Pos.map (expr_map_var f) m_i in
       FieldAccess (m_sp_opt, m_i', field, id)
 
 and m_access_map_var f m_access = Pos.map (access_map_var f) m_access
@@ -827,35 +827,35 @@ and loop_variables_map_var f = function
 
 and expr_map_var f = function
   | TestInSet (positive, m_e0, values) ->
-      let m_e0' = m_expr_map_var f m_e0 in
+      let m_e0' = Pos.map (expr_map_var f) m_e0 in
       let values' = List.map (set_value_map_var f) values in
       TestInSet (positive, m_e0', values')
-  | Unop (op, m_e0) -> Unop (op, m_expr_map_var f m_e0)
+  | Unop (op, m_e0) -> Unop (op, Pos.map (expr_map_var f) m_e0)
   | Comparison (op, m_e0, m_e1) ->
-      let m_e0' = m_expr_map_var f m_e0 in
-      let m_e1' = m_expr_map_var f m_e1 in
+      let m_e0' = Pos.map (expr_map_var f) m_e0 in
+      let m_e1' = Pos.map (expr_map_var f) m_e1 in
       Comparison (op, m_e0', m_e1')
   | Binop (op, m_e0, m_e1) ->
-      let m_e0' = m_expr_map_var f m_e0 in
-      let m_e1' = m_expr_map_var f m_e1 in
+      let m_e0' = Pos.map (expr_map_var f) m_e0 in
+      let m_e1' = Pos.map (expr_map_var f) m_e1 in
       Binop (op, m_e0', m_e1')
   | Conditional (m_e0, m_e1, m_e2_opt) ->
-      let m_e0' = m_expr_map_var f m_e0 in
-      let m_e1' = m_expr_map_var f m_e1 in
-      let m_e2_opt' = Option.map (m_expr_map_var f) m_e2_opt in
+      let m_e0' = Pos.map (expr_map_var f) m_e0 in
+      let m_e1' = Pos.map (expr_map_var f) m_e1 in
+      let m_e2_opt' = Option.map (Pos.map (expr_map_var f)) m_e2_opt in
       Conditional (m_e0', m_e1', m_e2_opt')
   | FuncCall (fn, m_el) ->
-      let m_el' = List.map (m_expr_map_var f) m_el in
+      let m_el' = List.map (Pos.map (expr_map_var f)) m_el in
       FuncCall (fn, m_el')
   | FuncCallLoop (fn, m_loop, m_e0) ->
       let m_loop' = Pos.map (loop_variables_map_var f) m_loop in
-      let m_e0' = m_expr_map_var f m_e0 in
+      let m_e0' = Pos.map (expr_map_var f) m_e0 in
       FuncCallLoop (fn, m_loop', m_e0')
   | Literal l -> Literal l
   | Var access -> Var (access_map_var f access)
   | Loop (m_loop, m_e0) ->
       let m_loop' = Pos.map (loop_variables_map_var f) m_loop in
-      let m_e0' = m_expr_map_var f m_e0 in
+      let m_e0' = Pos.map (expr_map_var f) m_e0 in
       Loop (m_loop', m_e0')
   | NbCategory cvm -> NbCategory cvm
   | Attribut (m_access, attr) ->
@@ -875,18 +875,18 @@ and m_expr_map_var f e = Pos.map (expr_map_var f) e
 let rec print_arg_map_var f = function
   | PrintString s -> PrintString s
   | PrintAccess (info, m_a) -> PrintAccess (info, m_access_map_var f m_a)
-  | PrintIndent m_e0 -> PrintIndent (m_expr_map_var f m_e0)
-  | PrintExpr (m_e0, i0, i1) -> PrintExpr (m_expr_map_var f m_e0, i0, i1)
+  | PrintIndent m_e0 -> PrintIndent (Pos.map (expr_map_var f) m_e0)
+  | PrintExpr (m_e0, i0, i1) -> PrintExpr (Pos.map (expr_map_var f) m_e0, i0, i1)
 
 and formula_loop_map_var f m_lvs = Pos.map (loop_variables_map_var f) m_lvs
 
 and formula_decl_map_var f = function
   | VarDecl (m_access, m_e1) ->
       let m_access' = m_access_map_var f m_access in
-      let m_e1' = m_expr_map_var f m_e1 in
+      let m_e1' = Pos.map (expr_map_var f) m_e1 in
       VarDecl (m_access', m_e1')
   | EventFieldRef (m_e0, m_if, id, v) ->
-      let m_e0' = m_expr_map_var f m_e0 in
+      let m_e0' = Pos.map (expr_map_var f) m_e0 in
       let v' = f v in
       EventFieldRef (m_e0', m_if, id, v')
 
@@ -900,13 +900,13 @@ and formula_map_var f = function
 and instr_map_var f g = function
   | Affectation m_f -> Affectation (Pos.map (formula_map_var f) m_f)
   | IfThenElse (m_e0, m_il0, m_il1) ->
-      let m_e0' = m_expr_map_var f m_e0 in
+      let m_e0' = Pos.map (expr_map_var f) m_e0 in
       let m_il0' = List.map (m_instr_map_var f g) m_il0 in
       let m_il1' = List.map (m_instr_map_var f g) m_il1 in
       IfThenElse (m_e0', m_il0', m_il1')
   | WhenDoElse (m_eil, m_il) ->
       let map (m_e0, m_il0, pos) =
-        let m_e0' = m_expr_map_var f m_e0 in
+        let m_e0' = Pos.map (expr_map_var f) m_e0 in
         let m_il0' = List.map (m_instr_map_var f g) m_il0 in
         (m_e0', m_il0', pos)
       in
@@ -916,7 +916,7 @@ and instr_map_var f g = function
   | ComputeDomain (dom, m_sp_opt) -> ComputeDomain (dom, m_sp_opt)
   | ComputeChaining (ch, m_sp_opt) -> ComputeChaining (ch, m_sp_opt)
   | ComputeVerifs (m_sl, m_e0, m_sp_opt) ->
-      let m_e0' = m_expr_map_var f m_e0 in
+      let m_e0' = Pos.map (expr_map_var f) m_e0 in
       ComputeVerifs (m_sl, m_e0', m_sp_opt)
   | ComputeTarget (tn, args, m_sp_opt) ->
       let args' = List.map (m_access_map_var f) args in
@@ -929,7 +929,9 @@ and instr_map_var f g = function
       let v' = f v in
       let al' = List.map (m_access_map_var f) al in
       let cvml' =
-        let map (cvm, m_e, m_sp_opt) = (cvm, m_expr_map_var f m_e, m_sp_opt) in
+        let map (cvm, m_e, m_sp_opt) =
+          (cvm, Pos.map (expr_map_var f) m_e, m_sp_opt)
+        in
         List.map map cvml
       in
       let m_il' = List.map (m_instr_map_var f g) m_il in
@@ -938,9 +940,9 @@ and instr_map_var f g = function
       let v' = f v in
       let e3l' =
         let map (m_e0, m_e1, m_e2) =
-          let m_e0' = m_expr_map_var f m_e0 in
-          let m_e1' = m_expr_map_var f m_e1 in
-          let m_e2' = m_expr_map_var f m_e2 in
+          let m_e0' = Pos.map (expr_map_var f) m_e0 in
+          let m_e1' = Pos.map (expr_map_var f) m_e1 in
+          let m_e2' = Pos.map (expr_map_var f) m_e2 in
           (m_e0', m_e1', m_e2')
         in
         List.map map e3l
@@ -952,16 +954,16 @@ and instr_map_var f g = function
       let cvml' =
         let map (v, cvm, m_e0, m_sp_opt) =
           let v' = f v in
-          let m_e0' = m_expr_map_var f m_e0 in
+          let m_e0' = Pos.map (expr_map_var f) m_e0 in
           (v', cvm, m_e0', m_sp_opt)
         in
         List.map map cvml
       in
-      let el' = List.map (m_expr_map_var f) el in
+      let el' = List.map (Pos.map (expr_map_var f)) el in
       let vel' =
         let map (v, m_e0) =
           let v' = f v in
-          let m_e0' = m_expr_map_var f m_e0 in
+          let m_e0' = Pos.map (expr_map_var f) m_e0 in
           (v', m_e0')
         in
         List.map map vel
@@ -973,7 +975,7 @@ and instr_map_var f g = function
         let map (v0, v1, m_e0) =
           let v0' = f v0 in
           let v1' = f v1 in
-          let m_e0' = m_expr_map_var f m_e0 in
+          let m_e0' = Pos.map (expr_map_var f) m_e0 in
           (v0', v1', m_e0')
         in
         Option.map map vve_opt
@@ -981,12 +983,12 @@ and instr_map_var f g = function
       let ve_opt' =
         let map (v, m_e0) =
           let v' = f v in
-          let m_e0' = m_expr_map_var f m_e0 in
+          let m_e0' = Pos.map (expr_map_var f) m_e0 in
           (v', m_e0')
         in
         Option.map map ve_opt
       in
-      let e_opt' = Option.map (m_expr_map_var f) e_opt in
+      let e_opt' = Option.map (Pos.map (expr_map_var f)) e_opt in
       let m_il' = List.map (m_instr_map_var f g) m_il in
       ArrangeEvents (vve_opt', ve_opt', e_opt', m_il')
   | RaiseError (m_err, m_s_opt) ->

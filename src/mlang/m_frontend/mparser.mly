@@ -89,7 +89,7 @@ variable_name:
 
 source_file:
 | vl = with_pos(symbol_colon_etc)* is = source_file_rev EOF {
-    List.flatten (vl :: List.rev is)
+    ListExt.flatten_tail_rec (vl :: List.rev is)
   }
 
 symbol_colon_etc:
