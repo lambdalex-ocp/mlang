@@ -187,9 +187,6 @@ let check_test (program : Mir.program) (test_input : Irj_file.input)
     | [] -> []
     | inst :: insts ->
         Cli.debug_print "Executing program %s" inst.label;
-        (* Cli.debug_print "Combined Program (w/o verif conds):@.%a@."
-           Format_bir.format_program program; *)
-        Format.printf "Executing program %s" inst.label;
         let dbg_info = Dbg_info.empty in
         let add_input_var_to_info var lit dbg_info =
           let open Dbg_info in
@@ -197,13 +194,18 @@ let check_test (program : Mir.program) (test_input : Irj_file.input)
           let pos = Com.Var.name var |> Pos.get in
           let origin =
             Origin.make (Pos.get_file pos) (Pos.get_start_line pos)
-              Origin.Declared
+              (Pos.get_end_line pos) Origin.Declared
           in
-          let info = Info.make name var lit origin in
           let tick = Tick.tick () in
-          let infos = Tick.Map.add tick info dbg_info.infos in
-          let tick_name_map = StrMap.add name tick dbg_info.tick_name_map in
-          { dbg_info with infos; tick_name_map }
+          let descr = match Com.Var.descr_str var with
+          | exception _ -> None
+          | descr -> Some descr in
+          let runtime = Info.Runtime.make origin lit (Some name) in
+          let runtimes = Tick.Map.add tick runtime dbg_info.runtimes in
+          let static = Info.Static.make name origin true descr in
+          let statics = IntMap.add runtime.hash static dbg_info.statics in
+          let ledger = StrMap.add name tick dbg_info.ledger in
+          { dbg_info with runtimes; statics; ledger }
         in
         let dbg_info =
           Com.Var.Map.fold add_input_var_to_info inst.vars dbg_info
@@ -212,32 +214,10 @@ let check_test (program : Mir.program) (test_input : Irj_file.input)
           Mir_interpreter.evaluate_program program inst.vars inst.events
             value_sort round_ops (Some dbg_info)
         in
-        print_endline "after";
         let target_dbg_info =
           match (dep_graph_file, dbg_info) with
           | None, None -> None
           | Some filename, Some dbg_info ->
-              (* Add the input variables value - But only if they have not been set
-                 (not set == origin = Declared) *)
-              (* Note: This does not easily work with ticks, we're gonna try not setting them. *)
-              (* let add_to_map var lit map = *)
-              (*   let name = Com.Var.name_str var in *)
-              (*   StrMap.update name *)
-              (*     (function *)
-              (*       | Some *)
-              (*           Dbg_info.Info. *)
-              (*             { origin = { code_orig = Declared; _ }; _ } *)
-              (*       | None -> *)
-              (*           let rule_id = Dbg_info.Origin.Input in *)
-              (*           let file = "test_interpreter.ml" in *)
-              (*           let origin = Dbg_info.Origin.make file 0 rule_id in *)
-              (*           let info = Dbg_info.Info.make name var lit origin in *)
-              (*           Some info *)
-              (*       | oth -> oth) *)
-              (*     map *)
-              (* in *)
-              (* let infos = Com.Var.Map.fold add_to_map inst.vars dbg_info.infos in *)
-              (* let dbg_info = { dbg_info with infos } in *)
               (match !Config.platform with
               | Binary -> Dbg_info.write_json_file filename dbg_info
               | Server _ -> ());
