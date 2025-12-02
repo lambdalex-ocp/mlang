@@ -1,5 +1,6 @@
 (* This function should be the same independent of platform *)
-let extract_text_exact_loc (pos : Pos.t) (file : string option) : string option =
+let extract_text_exact_loc (pos : Pos.t) (file : string option) : string option
+    =
   let sofst = Pos.get_start_ofst pos in
   let eofst = Pos.get_end_ofst pos in
   let len = eofst - sofst in
@@ -20,7 +21,6 @@ let extract_text_exact_loc (pos : Pos.t) (file : string option) : string option 
     Some (replace_newline str)
   in
   match file with None -> None | Some file -> read file
-
 
 let open_file_for_text_extraction (_ : Pos.t) (_ : int) : string list =
   assert false

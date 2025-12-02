@@ -29,9 +29,10 @@ let check_all_tests (p : Mir.program) (test_dir : string)
     try
       Config.debug_flag := false;
       (* FIXME *)
-      ignore @@ Test_interpreter.check_test p
-        (Filename (test_dir ^ name))
-        None value_sort round_ops;
+      ignore
+      @@ Test_interpreter.check_test p
+           (Filename (test_dir ^ name))
+           None value_sort round_ops;
       Config.debug_flag := true;
       Cli.result_print "%s" name;
       (name :: successes, failures)

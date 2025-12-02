@@ -31,11 +31,9 @@ type t = {
           Format.fprintf fmt "(%a,%a)" pp_lexing_pos a pp_lexing_pos b]
   pos_ofst : ofst;
 }
-[@@deriving yojson]
+[@@deriving show, yojson]
 
-let pp fmt _ = Format.fprintf fmt "pos-info"
-
-let show _ = "pos-info"
+(* let pp fmt _ = Format.fprintf fmt "pos-info" *)
 
 (** A position in the source code is a file, as well as begin and end location
     of the form col:line *)

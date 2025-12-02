@@ -49,15 +49,16 @@ let dup_exists l =
 
 (** Parse variable with parameters, parameters have to be lowercase letters *)
 let parse_variable_generic_name loc (s : string) : Com.var_name_generic =
-  let parameters = String.fold_right (fun c acc -> 
-    match c with
-    | 'a'..'z' -> c::acc
-    | _ -> acc) s [] in
+  let parameters =
+    String.fold_right
+      (fun c acc -> match c with 'a' .. 'z' -> c :: acc | _ -> acc)
+      s []
+  in
 
   if dup_exists parameters then
     E.raise_spanned_error "variable parameters should have distinct names"
       (mk_position loc);
-  { Com.parameters = parameters; Com.base = s }
+  { Com.parameters; Com.base = s }
 
 let parse_variable loc (s : string) =
   try Com.Normal (parse_variable_name loc s)

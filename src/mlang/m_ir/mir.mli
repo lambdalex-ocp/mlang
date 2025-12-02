@@ -22,7 +22,7 @@ type m_access = access Pos.marked
 
 type expression = Com.Var.t Com.expression
 
-type m_expression = expression Pos.marked
+type m_expression = expression Pos.marked [@@deriving yojson]
 
 type instruction = (Com.Var.t, Com.Error.t) Com.instruction
 

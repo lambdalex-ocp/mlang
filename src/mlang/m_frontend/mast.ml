@@ -224,7 +224,7 @@ type source_file_item =
   | RuleDomDecl of rule_domain_decl
   | VerifDomDecl of verif_domain_decl
   | VariableSpaceDecl of Com.variable_space
-[@@deriving yojson]
+  [@@deriving yojson]
 
 (* TODO: parse something here *)
 

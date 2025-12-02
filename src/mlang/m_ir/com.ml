@@ -147,7 +147,6 @@ module Array = struct
   open Yojson.Safe
 
   let to_yojson f arr =
-    print_endline "kewl";
     let l = Array.to_list @@ Array.map f arr in
     `List l
 
@@ -608,8 +607,7 @@ let get_used_variables (e : 'v expression) :
     | Attribut (Mark (var, _), _)
     | IsVariable (Mark (var, _), _) -> (
         match var with
-        | TabAccess (_, v, m_i) -> 
-            (Tab (v, m_i), None) :: acc
+        | TabAccess (_, v, m_i) -> (Tab (v, m_i), None) :: acc
         | VarAccess (_, v) -> (V v, None) :: acc
         | FieldAccess (_, Mark (v, _), _, _) -> get_used_variables_ v acc)
     | Literal { lit; origin = Some (Mark (id, pos)) } ->
@@ -919,7 +917,9 @@ and instr_map_var f g = function
       let m_e0' = Pos.map (expr_map_var f) m_e0 in
       ComputeVerifs (m_sl, m_e0', m_sp_opt)
   | ComputeTarget (tn, args, m_sp_opt) ->
+      print_endline "before map";
       let args' = List.map (m_access_map_var f) args in
+      print_endline "after map";
       ComputeTarget (tn, args', m_sp_opt)
   | VerifBlock m_il0 -> VerifBlock (List.map (m_instr_map_var f g) m_il0)
   | Print (pr_std, pr_args) ->

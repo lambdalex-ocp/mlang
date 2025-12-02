@@ -24,7 +24,18 @@
  (package mlang)
  (preprocess
   (staged_pps ppx_import ppx_deriving.show ppx_deriving_yojson))
- (modules pos dgfip_m config json mapExt strMap pp strSet setExt))
+ (modules
+  listExt
+  pos
+  dgfip_m
+  config
+  json
+  mapExt
+  strMap
+  pp
+  strSet
+  setExt
+  list))
 
 (library
  (name platform)
